@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """cli-anything-illustrator -- command-line control of Adobe Illustrator.
 
-Adapted from yb2460/harness-anything (Windows COM harness); see PROVENANCE.md.
 Machine-readable JSON goes to stdout; diagnostics go to stderr.
 `--help` works everywhere without contacting Illustrator.
 """

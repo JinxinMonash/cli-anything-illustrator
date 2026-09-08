@@ -1,14 +1,11 @@
 # cli-anything-illustrator (macOS)
 
-Command-line control of Adobe Illustrator for **editable scientific figures**:
-assemble R/Python plot exports into multi-panel figures, standardise
-typography and layout, make targeted revisions to existing artwork, and export
-publication files — while keeping text live and vectors editable.
-
-Adapted from the Windows COM Illustrator harness in
-[yb2460/harness-anything](https://github.com/yb2460/harness-anything)
-(commit `dcb3e51`, MIT); see [PROVENANCE.md](PROVENANCE.md) for the audit and
-reuse matrix.
+Native command-line control of Adobe Illustrator for **editable scientific
+figures**: assemble R/Python plot exports into labelled multi-panel figures,
+standardise typography and layout, make targeted, non-destructive revisions
+to existing artwork, and export publication files — with live text and real
+vector paths preserved end to end. Ships with a Codex skill so an agent can
+run the same inspect → plan → edit → verify → export workflow.
 
 ## Architecture
 
@@ -118,3 +115,8 @@ been proven, and on which platform.
 - Item `uuid` targeting depends on the installed Illustrator exposing
   `PageItem.uuid` (2020+); name-based targeting is the fallback.
 - Windows backend is untested here and marked experimental.
+
+## License
+
+MIT — see [LICENSE](LICENSE). Third-party code provenance is documented in
+[PROVENANCE.md](PROVENANCE.md).

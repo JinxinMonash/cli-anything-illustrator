@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cli-anything-illustrator"
-version = "0.9.1"
-description = "Command-line control of Adobe Illustrator on macOS (AppleScript/ExtendScript) for editable scientific figures. Adapted from yb2460/harness-anything."
+version = "0.9.2"
+description = "Native command-line control of Adobe Illustrator on macOS (AppleScript/ExtendScript) for editable, publication-ready scientific figures."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
@@ -19,7 +19,7 @@ dev = ["pytest>=7", "esprima>=4"]
 cli-anything-illustrator = "cli_anything.illustrator.cli:main"
 
 [project.urls]
-Upstream = "https://github.com/yb2460/harness-anything"
+Homepage = "https://github.com/JinxinMonash/cli-anything-illustrator"
 
 [tool.setuptools.packages.find]
 where = ["src"]

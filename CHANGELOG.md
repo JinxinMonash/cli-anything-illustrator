@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.9.2 (2026-09-09)
+
+- Refined the Codex skill description and workflow statements (clearer
+  activation boundaries and integrity rules; no behavioural change).
+- Rewrote README/package descriptions; upstream provenance now lives solely
+  in LICENSE and PROVENANCE.md.
+
 ## 0.9.1 (2026-09-09)
 
 Fix from first live-Mac validation (reported via Codex session):
