@@ -60,3 +60,26 @@ def test_version_key_ordering():
 def test_stderr_error_mapping(stderr, exc):
     with pytest.raises(exc):
         MacBackend._raise_for_stderr(stderr, "Adobe Illustrator")
+
+
+# --- regression: first live-Mac defect (0.9.1) --------------------------
+# `tell application <variable>` prevents AppleScript from loading the app's
+# scripting dictionary, so `do javascript` fails to compile. The runner must
+# carry the application name as a compile-time string literal.
+
+def test_runner_bakes_app_name_as_literal():
+    src = MacBackend.build_runner("Adobe Illustrator 2025")
+    assert 'tell application "Adobe Illustrator 2025"' in src
+    assert "__CAI_APP_NAME__" not in src
+    assert "do javascript jsxSrc" in src
+    # jsx path and timeout still arrive via argv (never interpolated)
+    assert "item 1 of argv" in src and "item 2 of argv" in src
+
+
+def test_runner_escapes_hostile_app_names():
+    src = MacBackend.build_runner('Weird "App" \\ Name')
+    assert 'tell application "Weird \\"App\\" \\\\ Name"' in src
+    # no unescaped quote can terminate the literal early:
+    # every '"' except the two delimiters must be preceded by a backslash
+    line = next(l for l in src.splitlines() if "tell application" in l)
+    assert line.count('"') - line.count('\\"') == 2

@@ -167,3 +167,19 @@ def test_figure_assembly_acceptance(tmp_path):
     run_cli("doc", "close", "--doc", "figure1.ai", "--discard-changes")
     out = run_cli("figure", "verify", "--spec", str(spec_path))
     assert out["result"]["ok"] is True, out["result"]["checks"]
+
+
+def test_runner_applescript_compiles(tmp_path):
+    """Regression (0.9.1): the generated runner must COMPILE, which requires
+    Illustrator's dictionary to resolve `do javascript` from the literal app
+    name. A runtime-variable tell target fails exactly here."""
+    from cli_anything.illustrator.backend.mac import MacBackend
+    src = MacBackend().build_runner(
+        json.loads(subprocess.run(
+            [sys.executable, "-m", "cli_anything.illustrator", "app", "detect"],
+            capture_output=True, text=True).stdout)["result"]["app_name"])
+    scpt = tmp_path / "runner.applescript"
+    scpt.write_text(src)
+    proc = subprocess.run(["osacompile", "-o", str(tmp_path / "runner.scpt"),
+                           str(scpt)], capture_output=True, text=True)
+    assert proc.returncode == 0, proc.stderr

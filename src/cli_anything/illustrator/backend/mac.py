@@ -129,6 +129,19 @@ class MacBackend(Backend):
         return self._app
 
     # -- transport -------------------------------------------------------
+    @staticmethod
+    def build_runner(app_name: str) -> str:
+        """Runner AppleScript with the app name baked in as a LITERAL.
+
+        The `tell application` target must be a compile-time literal so that
+        osascript loads Illustrator's scripting dictionary; with a runtime
+        variable the app-specific term `do javascript` does not compile
+        (defect found in first live-Mac validation, fixed in 0.9.1).
+        """
+        from cli_anything.illustrator.backend.base import load_jsx
+        escaped = app_name.replace("\\", "\\\\").replace('"', '\\"')
+        return load_jsx("runner.applescript").replace("__CAI_APP_NAME__", escaped)
+
     def _osascript(self, jsx_source: str, timeout: float) -> str:
         if shutil.which("osascript") is None:
             raise SessionError(
@@ -142,12 +155,11 @@ class MacBackend(Backend):
         try:
             with open(jsx_path, "w", encoding="utf-8") as fh:
                 fh.write(jsx_source)
-            from cli_anything.illustrator.backend.base import load_jsx
             with open(runner_path, "w", encoding="utf-8") as fh:
-                fh.write(load_jsx("runner.applescript"))
+                fh.write(self.build_runner(app_name))
             try:
                 proc = subprocess.run(
-                    ["osascript", runner_path, jsx_path, app_name,
+                    ["osascript", runner_path, jsx_path,
                      str(int(max(timeout, 1)))],
                     capture_output=True, text=True, timeout=timeout + 20,
                 )

@@ -26,6 +26,16 @@ represented as live-Illustrator testing.
 | Codex skill evaluation (13 cases) | Activation/refusal/missing-input behaviour of the skill under Codex | **NOT RUN** — cases defined in `.agents/skills/cli-anything-illustrator/references/evaluation.md`; requires Codex + macOS |
 | Windows COM backend | Upstream platform retained, isolated | **NOT RUN**, marked experimental |
 
+## Post-release live finding (fixed in 0.9.1)
+
+The first live-Mac run (via a Codex session) confirmed the predicted risk
+area: the AppleScript runner's `tell application <runtime variable>` block
+prevented dictionary resolution of `do javascript`. Fixed by generating the
+runner with the application name as a compile-time literal; regression-guarded
+portably (literal/escaping tests) and live (`osacompile` check in the
+integration suite). This validates the report's honesty framework: mock
+evidence could not, and did not, stand in for live evidence.
+
 ## What is explicitly not claimed
 
 - No claim of Apple Silicon or Intel coverage: neither was exercised.

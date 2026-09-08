@@ -3,4 +3,4 @@
 macOS-native backend (AppleScript ``do javascript`` -> ExtendScript) adapted
 from the Windows COM harness in yb2460/harness-anything (see PROVENANCE.md).
 """
-__version__ = "0.9.0"
+__version__ = "0.9.1"
