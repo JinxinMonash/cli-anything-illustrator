@@ -4,17 +4,20 @@ description: >
   Inspect, create, revise, assemble and export EDITABLE scientific figures in
   Adobe Illustrator on macOS through the cli-anything-illustrator CLI. Use for
   requests to edit an Illustrator/.ai document, combine R/Python plot exports
-  (SVG/PDF/EPS) into a labelled multi-panel figure, standardise figure fonts,
-  labels, alignment or layout, add approved annotations, or produce
-  publication-ready PDF/SVG/PNG from Illustrator artwork. Do NOT use for
-  generic image generation, raster photo editing, data analysis or plotting
-  itself, or file conversion that does not require Illustrator.
+  (SVG/PDF/EPS) into a labelled multi-panel figure from a JSON template
+  (figure spec), standardise figure fonts, labels, alignment or layout, add
+  approved annotations, or deliver publication-ready PDF/SVG and
+  high-resolution PNG from Illustrator artwork. Do NOT use for generic image
+  generation, raster photo editing, data analysis or plotting itself, or file
+  conversion that does not require Illustrator.
 ---
 
 # cli-anything-illustrator
 
 Drive Adobe Illustrator natively on macOS (AppleScript → ExtendScript)
-through the `cli-anything-illustrator` command. The guiding principle:
+through the `cli-anything-illustrator` command. Given a figure template
+(spec) and the user's plot exports, it produces an editable,
+high-resolution multi-panel figure in one pass. The guiding principle:
 figures remain fully editable — live text, real vector paths, named layers —
 and the scientific content of a figure is never altered by formatting work.
 

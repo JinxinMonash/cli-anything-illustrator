@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.9.3 (2026-09-09)
+
+- Live-Mac status upgraded: end-to-end figure generation via Codex confirmed
+  on macOS/Illustrator (user-reported after the 0.9.1 fix). Validation report
+  and README updated accordingly; hedging language removed.
+- README gains a "Use with Codex" fast path (install-and-run prompt, template
+  figure workflow); limitations trimmed to actual design notes.
+- Skill description now names the template-spec workflow and high-resolution
+  deliverables explicitly. No behavioural change.
+
 ## 0.9.2 (2026-09-09)
 
 - Refined the Codex skill description and workflow statements (clearer

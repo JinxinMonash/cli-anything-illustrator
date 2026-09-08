@@ -8,11 +8,14 @@
 
 This project was developed on a **Linux machine without macOS or Adobe
 Illustrator**. Everything marked PASS below is real, executed evidence from
-this machine; everything requiring a live Illustrator session is marked
-**NOT RUN** and is covered by the shipped integration tests plus
-`scripts/run_mac_validation.sh`, which produces the missing evidence in one
-command on the user's Mac. Mocked results are labelled as mocked and are not
-represented as live-Illustrator testing.
+that machine. Live-Mac status: after the 0.9.1 runner fix, the maintainer
+confirmed the end-to-end workflow on macOS with Adobe Illustrator driven by
+Codex — installation, diagnostics, and figure generation from a template spec
+produced the editable figure (user-reported live confirmation, 2026-09-09).
+The formal integration-test suite and `scripts/run_mac_validation.sh` remain
+available to collect a complete machine-readable evidence bundle; their
+line-item results have not been archived here yet. Mocked results are
+labelled as mocked and are not represented as live-Illustrator testing.
 
 ## Evidence classes
 
@@ -22,7 +25,7 @@ represented as live-Illustrator testing.
 | JSX syntax (27) | Every assembled ExtendScript program (prelude + each of the 26 op templates, with adversarial params) parses as valid JavaScript (`node --check`). ExtendScript is ES3 ⊂ what Node accepts, so this catches generation errors, not Illustrator API validity | **PASS** (this machine) |
 | Mock end-to-end (35) | Full pipeline — console script → JSON params → JSX assembly → transport → prelude logic (document targeting, selectors, canvas coordinates, alignment math) → envelope → exit codes — executed against a Node mock of the Illustrator DOM with state persisted across CLI processes. Includes: save/close/reopen with Unicode paths+contents, ambiguity rejection, uuid targeting, confirm/force/overwrite/unsaved-changes guards, font refusal vs approved substitution, editable vs linked import, permission/app-missing/timeout/garbage failure modes, operation log, 4-panel assemble→verify (20/20 checks) with aspect-ratio assertions | **PASS (mock — not live evidence)** |
 | Acceptance demo (mock) | `figure validate → assemble → close → verify` on the four synthetic panels: manifest written, panels editable groups, labels live text, AI/PDF/SVG/PNG outputs produced, verify 20/20 | **PASS (mock)** — artefacts in `validation_evidence_mock/` |
-| Live Illustrator integration (8 tests) | Real `do javascript` round trip, real font resolution, real SVG import editability, real export files, reopen checks, doctor all-green | **NOT RUN** — blocker: no macOS/Illustrator in the build environment. Run `scripts/run_mac_validation.sh` |
+| Live Illustrator integration (9 tests) | Real `do javascript` round trip, runner compilation, font resolution, SVG import editability, export files, reopen checks, doctor all-green | **CONFIRMED IN LIVE USE** (user-reported, v0.9.1+): end-to-end install → doctor → figure assembly worked on macOS/Illustrator via Codex. Formal per-test evidence bundle not yet archived — `scripts/run_mac_validation.sh` produces it |
 | Codex skill evaluation (13 cases) | Activation/refusal/missing-input behaviour of the skill under Codex | **NOT RUN** — cases defined in `.agents/skills/cli-anything-illustrator/references/evaluation.md`; requires Codex + macOS |
 | Windows COM backend | Upstream platform retained, isolated | **NOT RUN**, marked experimental |
 
