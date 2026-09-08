@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Fake osascript for PORTABLE tests: routes the JSX to a Node-based mock
+# Illustrator DOM. Enabled by putting this directory first on $PATH.
+exec node "$(dirname "$0")/run_jsx.js" "$@"

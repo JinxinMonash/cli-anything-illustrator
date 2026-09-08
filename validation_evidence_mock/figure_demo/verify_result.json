@@ -1,0 +1,154 @@
+{
+  "ok": true,
+  "command": "figure verify",
+  "result": {
+    "ok": true,
+    "checks": [
+      {
+        "check": "master_exists",
+        "pass": true,
+        "detail": "/home/jzhao/.claude-science/orgs/2e758747-d54b-4040-9f1b-98639b6e719e/workspaces/fec523be-1da2-417b-971a-a038687361b1/cli-anything-illustrator/validation_evidence_mock/figure_demo/figure1.ai"
+      },
+      {
+        "check": "master_reopens",
+        "pass": true,
+        "detail": "figure1.ai: 127 items, 53 text frames"
+      },
+      {
+        "check": "no_missing_links",
+        "pass": true,
+        "detail": "no placed items"
+      },
+      {
+        "check": "fonts_available",
+        "pass": true,
+        "detail": "all document fonts available"
+      },
+      {
+        "check": "panel_A_group_present",
+        "pass": true,
+        "detail": "1 group(s) named panel_A"
+      },
+      {
+        "check": "panel_A_is_vector_group",
+        "pass": true,
+        "detail": "group"
+      },
+      {
+        "check": "panel_A_label",
+        "pass": true,
+        "detail": "A"
+      },
+      {
+        "check": "panel_B_group_present",
+        "pass": true,
+        "detail": "1 group(s) named panel_B"
+      },
+      {
+        "check": "panel_B_is_vector_group",
+        "pass": true,
+        "detail": "group"
+      },
+      {
+        "check": "panel_B_label",
+        "pass": true,
+        "detail": "B"
+      },
+      {
+        "check": "panel_C_group_present",
+        "pass": true,
+        "detail": "1 group(s) named panel_C"
+      },
+      {
+        "check": "panel_C_is_vector_group",
+        "pass": true,
+        "detail": "group"
+      },
+      {
+        "check": "panel_C_label",
+        "pass": true,
+        "detail": "C"
+      },
+      {
+        "check": "panel_D_group_present",
+        "pass": true,
+        "detail": "1 group(s) named panel_D"
+      },
+      {
+        "check": "panel_D_is_vector_group",
+        "pass": true,
+        "detail": "group"
+      },
+      {
+        "check": "panel_D_label",
+        "pass": true,
+        "detail": "D"
+      },
+      {
+        "check": "live_text_in_master",
+        "pass": true,
+        "detail": "53 text frames"
+      },
+      {
+        "check": "export_pdf_exists",
+        "pass": true,
+        "detail": "/home/jzhao/.claude-science/orgs/2e758747-d54b-4040-9f1b-98639b6e719e/workspaces/fec523be-1da2-417b-971a-a038687361b1/cli-anything-illustrator/validation_evidence_mock/figure_demo/figure1.pdf"
+      },
+      {
+        "check": "export_png_exists",
+        "pass": true,
+        "detail": "/home/jzhao/.claude-science/orgs/2e758747-d54b-4040-9f1b-98639b6e719e/workspaces/fec523be-1da2-417b-971a-a038687361b1/cli-anything-illustrator/validation_evidence_mock/figure_demo/figure1_300dpi.png"
+      },
+      {
+        "check": "export_svg_exists",
+        "pass": true,
+        "detail": "/home/jzhao/.claude-science/orgs/2e758747-d54b-4040-9f1b-98639b6e719e/workspaces/fec523be-1da2-417b-971a-a038687361b1/cli-anything-illustrator/validation_evidence_mock/figure_demo/figure1.svg"
+      }
+    ],
+    "master": "/home/jzhao/.claude-science/orgs/2e758747-d54b-4040-9f1b-98639b6e719e/workspaces/fec523be-1da2-417b-971a-a038687361b1/cli-anything-illustrator/validation_evidence_mock/figure_demo/figure1.ai",
+    "document_report": {
+      "name": "figure1.ai",
+      "path": "/home/jzhao/.claude-science/orgs/2e758747-d54b-4040-9f1b-98639b6e719e/workspaces/fec523be-1da2-417b-971a-a038687361b1/cli-anything-illustrator/validation_evidence_mock/figure_demo/figure1.ai",
+      "saved": true,
+      "width": 510.236220472441,
+      "height": 345.82677165354335,
+      "color_space": "DocumentColorSpace.RGB",
+      "artboards": 1,
+      "layers": 2,
+      "page_items": 127,
+      "text_frames": 53,
+      "placed_items": 0,
+      "raster_items": 0,
+      "active": true,
+      "artboard_list": [
+        {
+          "index": 0,
+          "name": "Artboard 1",
+          "width": 510.236220472441,
+          "height": 345.82677165354335
+        }
+      ],
+      "fonts_used": [
+        {
+          "font": "Helvetica-Bold",
+          "text_frames": 4,
+          "available_in_app": true
+        },
+        {
+          "font": "Helvetica",
+          "text_frames": 49,
+          "available_in_app": true
+        }
+      ],
+      "fonts_unavailable": [],
+      "placed_links": [],
+      "clipping_paths": 0,
+      "locked_layers": [],
+      "hidden_layers": [],
+      "legacy_text_items": 0,
+      "compound_paths": 0,
+      "symbol_items": 0,
+      "warnings": []
+    }
+  }
+}

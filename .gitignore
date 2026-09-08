@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+build/
+dist/
+.venv/
+cai_illustrator_log.jsonl
+validation_evidence/
+.DS_Store

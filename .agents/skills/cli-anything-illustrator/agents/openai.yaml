@@ -1,0 +1,21 @@
+# Optional Codex UI metadata for the cli-anything-illustrator skill.
+display_name: Illustrator scientific figures
+short_description: >
+  Edit Illustrator documents and assemble editable multi-panel scientific
+  figures on macOS.
+interface:
+  display_name: Illustrator scientific figures
+  short_description: >
+    Edit Illustrator documents and assemble editable multi-panel scientific
+    figures on macOS.
+dependencies:
+  tools:
+    - type: shell
+      command: cli-anything-illustrator
+      description: >
+        Python CLI (pip package cli-anything-illustrator) driving Adobe
+        Illustrator via osascript; requires macOS + Illustrator + Automation
+        permission.
+policy:
+  # Mutating Illustrator documents and writing files should stay visible.
+  invocation: user_visible

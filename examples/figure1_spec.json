@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "canvas": {"width": 180, "height": 122, "units": "mm", "color_mode": "RGB",
+             "title": "figure1"},
+  "defaults": {"label": {"font": "Helvetica-Bold", "size_pt": 12,
+                          "color": [0, 0, 0], "offset": [1, 1]}},
+  "panels": [
+    {"id": "A", "source": "panels/panel_A.svg", "mode": "editable",
+     "frame": {"x": 0,  "y": 0,  "w": 88, "h": 58}, "label": {"text": "A"}},
+    {"id": "B", "source": "panels/panel_B.svg", "mode": "editable",
+     "frame": {"x": 92, "y": 0,  "w": 88, "h": 58}, "label": {"text": "B"}},
+    {"id": "C", "source": "panels/panel_C.svg", "mode": "editable",
+     "frame": {"x": 0,  "y": 62, "w": 88, "h": 58}, "label": {"text": "C"}},
+    {"id": "D", "source": "panels/panel_D.svg", "mode": "editable",
+     "frame": {"x": 92, "y": 62, "w": 88, "h": 58}, "label": {"text": "D"}}
+  ],
+  "output": {
+    "ai": "figure1.ai",
+    "exports": [
+      {"format": "pdf", "path": "figure1.pdf"},
+      {"format": "png", "path": "figure1_300dpi.png", "dpi": 300},
+      {"format": "svg", "path": "figure1.svg"}
+    ]
+  }
+}

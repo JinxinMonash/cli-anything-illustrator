@@ -1,0 +1,4 @@
+{"ts": "2026-09-08T15:23:46.226412+00:00", "command": "figure validate", "argv": ["--compact", "figure", "validate", "--spec", "figure1_spec.json"], "ok": true, "error_code": null}
+{"ts": "2026-09-08T15:23:48.436071+00:00", "command": "figure assemble", "argv": ["figure", "assemble", "--spec", "figure1_spec.json"], "ok": true, "error_code": null}
+{"ts": "2026-09-08T15:23:48.700965+00:00", "command": "doc close", "argv": ["--compact", "doc", "close", "--doc", "figure1.ai", "--discard-changes"], "ok": true, "error_code": null}
+{"ts": "2026-09-08T15:23:50.198818+00:00", "command": "figure verify", "argv": ["figure", "verify", "--spec", "figure1_spec.json"], "ok": true, "error_code": null}

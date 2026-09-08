@@ -1,0 +1,268 @@
+{
+  "tool": "cli-anything-illustrator figure assemble",
+  "started_utc": "2026-09-08T15:23:46.313528+00:00",
+  "spec": {
+    "version": 1,
+    "canvas": {
+      "width": 180,
+      "height": 122,
+      "units": "mm",
+      "color_mode": "RGB",
+      "title": "figure1"
+    },
+    "defaults": {
+      "label": {
+        "font": "Helvetica-Bold",
+        "size_pt": 12,
+        "color": [
+          0,
+          0,
+          0
+        ],
+        "offset": [
+          1,
+          1
+        ]
+      }
+    },
+    "panels": [
+      {
+        "id": "A",
+        "source": "panels/panel_A.svg",
+        "mode": "editable",
+        "frame": {
+          "x": 0,
+          "y": 0,
+          "w": 88,
+          "h": 58
+        },
+        "label": {
+          "text": "A"
+        }
+      },
+      {
+        "id": "B",
+        "source": "panels/panel_B.svg",
+        "mode": "editable",
+        "frame": {
+          "x": 92,
+          "y": 0,
+          "w": 88,
+          "h": 58
+        },
+        "label": {
+          "text": "B"
+        }
+      },
+      {
+        "id": "C",
+        "source": "panels/panel_C.svg",
+        "mode": "editable",
+        "frame": {
+          "x": 0,
+          "y": 62,
+          "w": 88,
+          "h": 58
+        },
+        "label": {
+          "text": "C"
+        }
+      },
+      {
+        "id": "D",
+        "source": "panels/panel_D.svg",
+        "mode": "editable",
+        "frame": {
+          "x": 92,
+          "y": 62,
+          "w": 88,
+          "h": 58
+        },
+        "label": {
+          "text": "D"
+        }
+      }
+    ],
+    "output": {
+      "ai": "figure1.ai",
+      "exports": [
+        {
+          "format": "pdf",
+          "path": "figure1.pdf"
+        },
+        {
+          "format": "png",
+          "path": "figure1_300dpi.png",
+          "dpi": 300
+        },
+        {
+          "format": "svg",
+          "path": "figure1.svg"
+        }
+      ]
+    }
+  },
+  "panels": [
+    {
+      "id": "A",
+      "source": "/home/jzhao/.claude-science/orgs/2e758747-d54b-4040-9f1b-98639b6e719e/workspaces/fec523be-1da2-417b-971a-a038687361b1/cli-anything-illustrator/validation_evidence_mock/figure_demo/panels/panel_A.svg",
+      "group": "panel_A",
+      "uuid": "1026",
+      "mode": "editable",
+      "editable": true,
+      "warnings": [],
+      "source_fonts": [
+        "Helvetica"
+      ],
+      "scale_percent": 100.0,
+      "final_bounds_pt": {
+        "x": 0,
+        "y": 0,
+        "w": 249.448819,
+        "h": 164.409449
+      },
+      "label": {
+        "text": "A",
+        "name": "label_A",
+        "font": {
+          "requested": "Helvetica-Bold",
+          "resolved": "Helvetica-Bold",
+          "exact": true
+        },
+        "substituted": false
+      }
+    },
+    {
+      "id": "B",
+      "source": "/home/jzhao/.claude-science/orgs/2e758747-d54b-4040-9f1b-98639b6e719e/workspaces/fec523be-1da2-417b-971a-a038687361b1/cli-anything-illustrator/validation_evidence_mock/figure_demo/panels/panel_B.svg",
+      "group": "panel_B",
+      "uuid": "1187",
+      "mode": "editable",
+      "editable": true,
+      "warnings": [],
+      "source_fonts": [
+        "Helvetica"
+      ],
+      "scale_percent": 100.0,
+      "final_bounds_pt": {
+        "x": 260.7874015748032,
+        "y": 0,
+        "w": 249.44881899999996,
+        "h": 164.409449
+      },
+      "label": {
+        "text": "B",
+        "name": "label_B",
+        "font": {
+          "requested": "Helvetica-Bold",
+          "resolved": "Helvetica-Bold",
+          "exact": true
+        },
+        "substituted": false
+      }
+    },
+    {
+      "id": "C",
+      "source": "/home/jzhao/.claude-science/orgs/2e758747-d54b-4040-9f1b-98639b6e719e/workspaces/fec523be-1da2-417b-971a-a038687361b1/cli-anything-illustrator/validation_evidence_mock/figure_demo/panels/panel_C.svg",
+      "group": "panel_C",
+      "uuid": "1452",
+      "mode": "editable",
+      "editable": true,
+      "warnings": [],
+      "source_fonts": [
+        "Helvetica"
+      ],
+      "scale_percent": 100.0,
+      "final_bounds_pt": {
+        "x": 0,
+        "y": 175.74803149606302,
+        "w": 249.448819,
+        "h": 164.409449
+      },
+      "label": {
+        "text": "C",
+        "name": "label_C",
+        "font": {
+          "requested": "Helvetica-Bold",
+          "resolved": "Helvetica-Bold",
+          "exact": true
+        },
+        "substituted": false
+      }
+    },
+    {
+      "id": "D",
+      "source": "/home/jzhao/.claude-science/orgs/2e758747-d54b-4040-9f1b-98639b6e719e/workspaces/fec523be-1da2-417b-971a-a038687361b1/cli-anything-illustrator/validation_evidence_mock/figure_demo/panels/panel_D.svg",
+      "group": "panel_D",
+      "uuid": "1811",
+      "mode": "editable",
+      "editable": true,
+      "warnings": [],
+      "source_fonts": [
+        "Helvetica"
+      ],
+      "scale_percent": 100.0,
+      "final_bounds_pt": {
+        "x": 260.7874015748032,
+        "y": 175.74803149606302,
+        "w": 249.44881899999996,
+        "h": 164.409449
+      },
+      "label": {
+        "text": "D",
+        "name": "label_D",
+        "font": {
+          "requested": "Helvetica-Bold",
+          "resolved": "Helvetica-Bold",
+          "exact": true
+        },
+        "substituted": false
+      }
+    }
+  ],
+  "outputs": [
+    {
+      "format": "AI",
+      "path": "/home/jzhao/.claude-science/orgs/2e758747-d54b-4040-9f1b-98639b6e719e/workspaces/fec523be-1da2-417b-971a-a038687361b1/cli-anything-illustrator/validation_evidence_mock/figure_demo/figure1.ai",
+      "size_bytes": 33189
+    },
+    {
+      "format": "PDF",
+      "path": "/home/jzhao/.claude-science/orgs/2e758747-d54b-4040-9f1b-98639b6e719e/workspaces/fec523be-1da2-417b-971a-a038687361b1/cli-anything-illustrator/validation_evidence_mock/figure_demo/figure1.pdf",
+      "size_bytes": 33400,
+      "detail": {
+        "format": "PDF",
+        "preserve_editability": true,
+        "reassociated_to": "/home/jzhao/.claude-science/orgs/2e758747-d54b-4040-9f1b-98639b6e719e/workspaces/fec523be-1da2-417b-971a-a038687361b1/cli-anything-illustrator/validation_evidence_mock/figure_demo/figure1.ai",
+        "exists": true
+      }
+    },
+    {
+      "format": "PNG",
+      "path": "/home/jzhao/.claude-science/orgs/2e758747-d54b-4040-9f1b-98639b6e719e/workspaces/fec523be-1da2-417b-971a-a038687361b1/cli-anything-illustrator/validation_evidence_mock/figure_demo/figure1_300dpi.png",
+      "size_bytes": 39,
+      "detail": {
+        "format": "PNG",
+        "dpi": 300,
+        "artboard": 0,
+        "exists": true
+      }
+    },
+    {
+      "format": "SVG",
+      "path": "/home/jzhao/.claude-science/orgs/2e758747-d54b-4040-9f1b-98639b6e719e/workspaces/fec523be-1da2-417b-971a-a038687361b1/cli-anything-illustrator/validation_evidence_mock/figure_demo/figure1.svg",
+      "size_bytes": 83,
+      "detail": {
+        "format": "SVG",
+        "text_handling": "keep",
+        "exists": true,
+        "warnings": []
+      }
+    }
+  ],
+  "warnings": [],
+  "completed": true,
+  "partial": false,
+  "document": "Untitled-1",
+  "finished_utc": "2026-09-08T15:23:48.432783+00:00"
+}

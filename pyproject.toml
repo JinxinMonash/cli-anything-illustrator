@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cli-anything-illustrator"
+version = "0.9.0"
+description = "Command-line control of Adobe Illustrator on macOS (AppleScript/ExtendScript) for editable scientific figures. Adapted from yb2460/harness-anything."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "cli-anything-illustrator contributors" }]
+dependencies = ["click>=8.0"]
+
+[project.optional-dependencies]
+dev = ["pytest>=7", "esprima>=4"]
+
+[project.scripts]
+cli-anything-illustrator = "cli_anything.illustrator.cli:main"
+
+[project.urls]
+Upstream = "https://github.com/yb2460/harness-anything"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["cli_anything*"]
+
+[tool.setuptools.package-data]
+"cli_anything.illustrator" = ["jsx/*.jsx", "jsx/*.applescript"]
+
+[tool.pytest.ini_options]
+markers = [
+    "illustrator: integration tests requiring a live Adobe Illustrator session on macOS (deselect with '-m \"not illustrator\"')",
+]
+testpaths = ["tests"]
