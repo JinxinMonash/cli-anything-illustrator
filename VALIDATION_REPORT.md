@@ -3,6 +3,17 @@
 **Last updated:** 2026-09-09 (UTC) · v0.9.4
 **Build environment:** Linux x86_64, Python 3.11, Node 18 — portable suite 92+ tests passing
 
+## First live-Mac run of v0.10.0 (user-reported, Illustrator 27.5 / macOS 15.6)
+
+Result: doctor 5/5 OK; 6 live tests passed (unicode text round-trip, targeting,
+selectors, PNG/SVG export classes); 3 failed + 2 errored. All five diagnosed
+and fixed in v0.10.1:
+cross-document duplicate-into-group PARM error (now layer-then-move, with the
+mock DOM emulating the restriction), stray source document on failed imports
+causing AppleEvent timeout cascades (now closed on every path), save/export
+dialogs unsuppressed (now silenced), and a test-fixture mistake in the two new
+live tests. Live re-run of the full suite on v0.10.1 is pending.
+
 ## v0.10.0 — reference reconstruction (evidence summary)
 
 **Executed on this Linux build machine (real evidence):**

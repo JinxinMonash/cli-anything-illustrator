@@ -7,7 +7,7 @@
         opts.pdfCompatible = (P.pdf_compatible === false) ? false : true;
         opts.embedICCProfile = true;
         opts.compressed = true;
-        doc.saveAs(f, opts);
+        CAI.silently(function () { doc.saveAs(f, opts); });
         var info = CAI.docInfo(doc);
         info.saved_to = String(f.fsName);
         return CAI.ok(info);

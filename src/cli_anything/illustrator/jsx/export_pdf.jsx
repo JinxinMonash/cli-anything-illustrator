@@ -14,12 +14,12 @@
         opts.preserveEditability = (P.editable === false) ? false : true;
         opts.viewAfterSaving = false;
         var f = new File(P.path);
-        doc.saveAs(f, opts);
+        CAI.silently(function () { doc.saveAs(f, opts); });
         var reassociated = false;
         if (origPath !== "") {
             var back = new IllustratorSaveOptions();
             back.pdfCompatible = true;
-            doc.saveAs(new File(origPath), back);
+            CAI.silently(function () { doc.saveAs(new File(origPath), back); });
             reassociated = true;
         }
         return CAI.ok({ path: String(f.fsName), format: "PDF",

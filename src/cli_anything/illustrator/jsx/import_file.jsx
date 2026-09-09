@@ -49,19 +49,32 @@
             // duplicate direct children of each source layer, topmost first;
             // PLACEATEND preserves relative z-order
             var copied = 0;
-            for (var li = 0; li < srcDoc.layers.length; li++) {
-                var sly = srcDoc.layers[li];
-                var direct = [];
-                for (var pi = 0; pi < sly.pageItems.length; pi++) {
-                    var cand = sly.pageItems[pi];
-                    if (cand.parent === sly) direct.push(cand);
+            // Cross-document duplicate() must target a DOCUMENT or LAYER;
+            // targeting a GroupItem in another document raises PARM
+            // (1346458189 'MRAP') on live Illustrator (found on 27.5).
+            // Duplicate to the target layer first, then move into the group
+            // within the same document.
+            try {
+                for (var li = 0; li < srcDoc.layers.length; li++) {
+                    var sly = srcDoc.layers[li];
+                    var direct = [];
+                    for (var pi = 0; pi < sly.pageItems.length; pi++) {
+                        var cand = sly.pageItems[pi];
+                        if (cand.parent === sly) direct.push(cand);
+                    }
+                    for (var di = 0; di < direct.length; di++) {
+                        var dup = direct[di].duplicate(layer,
+                                                       ElementPlacement.PLACEATEND);
+                        dup.move(grp, ElementPlacement.PLACEATEND);
+                        copied++;
+                    }
                 }
-                for (var di = 0; di < direct.length; di++) {
-                    direct[di].duplicate(grp, ElementPlacement.PLACEATEND);
-                    copied++;
-                }
+            } finally {
+                // ALWAYS close the source document, also on failure: a stray
+                // open document otherwise cascades into AppleEvent timeouts
+                // for every later command (found on live 27.5).
+                try { srcDoc.close(SaveOptions.DONOTSAVECHANGES); } catch (eC) {}
             }
-            srcDoc.close(SaveOptions.DONOTSAVECHANGES);
             if (copied === 0) {
                 grp.remove();
                 throw CAI.err("OP_FAILED", "No items were imported from: " + P.source);

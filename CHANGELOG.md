@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.10.1 (2026-09-09)
+
+Fixes from the first live-Mac run of v0.10.0 (Illustrator 27.5, macOS 15.6):
+
+- Editable import (and `figure assemble`) failed with PARM (1346458189
+  'MRAP'): cross-document `duplicate()` cannot target a GroupItem. Items are
+  now duplicated to the target layer and moved into the group within the
+  same document. The mock DOM now emulates this restriction so the portable
+  suite guards it.
+- On import failure the source document was left open, cascading into
+  AppleEvent timeouts (-1712) for subsequent commands. The source document is
+  now closed on every path.
+- `doc save-as` and PDF export now suppress modal dialogs
+  (userInteractionLevel) for unattended runs.
+- Fixed the two new live tests referencing a nonexistent fixture.
+
+
 ## 0.10.0 (2026-09-09)
 
 High-fidelity reference-figure reconstruction.

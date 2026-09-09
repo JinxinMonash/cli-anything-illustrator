@@ -225,6 +225,16 @@ class Item {
         return this;
     }
     duplicate(target, placement) {
+        // Live-Illustrator fidelity (found on 27.5): cross-document
+        // duplicate() into a GroupItem raises PARM (1346458189 'MRAP').
+        // Only documents and layers are valid cross-document targets.
+        if (target && target.typename === "GroupItem") {
+            const myDoc = this._document ? this._document() : null;
+            const tgtDoc = target._document ? target._document() : null;
+            if (myDoc && tgtDoc && myDoc !== tgtDoc) {
+                throw new Error("an Illustrator error occurred: 1346458189 ('MRAP')");
+            }
+        }
         const clone = this._clone();
         const arr = this._container(target);
         if (placement === ElementPlacement.PLACEATBEGINNING) arr.unshift(clone); else arr.push(clone);
@@ -236,6 +246,11 @@ class Item {
         Object.assign(c, this, { uuid: nextUuid(), parentRef: null });
         c._b = this._b.slice();
         return c;
+    }
+    _document() {
+        let p = this.parentRef;
+        while (p && p.typename !== "Document") p = p.parentRef || p.parentDoc || null;
+        return p;
     }
     remove() { this._detach(); this.parentRef = null; }
     zOrder(method) {

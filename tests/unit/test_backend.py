@@ -106,3 +106,24 @@ def test_win_backend_missing_pywin32_actionable_error():
     from cli_anything.illustrator.errors import AppMissingError
     with pytest.raises(AppMissingError, match=r"cli-anything-illustrator\[windows\]"):
         WinBackend().run_op("ping", {})  # pywin32 absent on this platform
+
+
+# --- regression: live-Mac defect found on Illustrator 27.5 (0.10.1) ------
+# Cross-document duplicate() into a GroupItem raises PARM ('MRAP'); the
+# import template must duplicate to the target LAYER and then move into the
+# group within the same document, and must close the source document on
+# every path (a stray source doc cascades into AppleEvent timeouts).
+
+def test_import_template_never_duplicates_cross_doc_into_group():
+    from cli_anything.illustrator.backend.base import load_jsx
+    src = load_jsx("import_file.jsx")
+    assert "duplicate(grp" not in src
+    assert "duplicate(layer" in src
+    assert "finally" in src and "srcDoc.close" in src
+
+
+def test_saveas_templates_suppress_dialogs():
+    from cli_anything.illustrator.backend.base import load_jsx
+    assert "CAI.silently(function () { doc.saveAs" in load_jsx("doc_saveas.jsx")
+    pdf = load_jsx("export_pdf.jsx")
+    assert pdf.count("CAI.silently") >= 2

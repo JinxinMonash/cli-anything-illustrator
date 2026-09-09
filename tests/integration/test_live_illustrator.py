@@ -195,14 +195,14 @@ SVG_REF = """<svg xmlns="http://www.w3.org/2000/svg" width="300pt" height="200pt
 class TestReconstructLive:
     """v0.10 fidelity workflow against real Illustrator."""
 
-    def test_reconstruct_preserve_and_compare(self, cli, tmp_path):
+    def test_reconstruct_preserve_and_compare(self, tmp_path):
         pytest.importorskip("pymupdf", reason="fidelity extra not installed")
         ref = tmp_path / "ref.svg"
         ref.write_text(SVG_REF)
         out_ai = tmp_path / "recon.ai"
-        _, out = cli.run("figure", "reconstruct", "--reference", str(ref),
-                         "--mode", "preserve", "--output", str(out_ai),
-                         "--dpi", "150")
+        out = run_cli("figure", "reconstruct", "--reference", str(ref),
+                      "--mode", "preserve", "--output", str(out_ai),
+                      "--dpi", "150")
         man = out["result"]
         assert man["route"] == "native_open"
         assert os.path.isfile(out_ai)
@@ -213,14 +213,14 @@ class TestReconstructLive:
         assert man["compare"] is not None, man["warnings"]
         m = man["compare"]["metrics"]
         assert m["ssim"] > 0.85, f"low fidelity: {m}"
-        cli.run("doc", "close", "--doc", "recon.ai", "--discard-changes")
+        run_cli("doc", "close", "--doc", "recon.ai", "--discard-changes")
 
-    def test_inspect_paths_roundtrip(self, cli, tmp_path):
-        cli.run("doc", "new", "--width", "100", "--height", "100")
-        cli.run("path", "add", "--anchors", "[[10,10],[90,10],[50,90]]",
+    def test_inspect_paths_roundtrip(self, tmp_path):
+        run_cli("doc", "new", "--width", "100", "--height", "100")
+        run_cli("path", "add", "--anchors", "[[10,10],[90,10],[50,90]]",
                 "--closed", "--fill", "0,120,60", "--item-name", "livetri")
-        _, out = cli.run("inspect", "paths", "--name", "livetri")
+        out = run_cli("inspect", "paths", "--name", "livetri")
         p = out["result"]["paths"][0]
         assert p["anchor_count"] == 3 and p["closed"] is True
         assert p["fill"]["rgb"] == [0, 120, 60]
-        cli.run("doc", "close", "--discard-changes")
+        run_cli("doc", "close", "--discard-changes")
