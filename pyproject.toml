@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cli-anything-illustrator"
-version = "0.9.4"
+version = "0.10.0"
 description = "Native command-line control of Adobe Illustrator on macOS (AppleScript/ExtendScript) for editable, publication-ready scientific figures."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -15,6 +15,7 @@ dependencies = ["click>=8.0"]
 [project.optional-dependencies]
 dev = ["pytest>=7"]
 windows = ["pywin32>=306; sys_platform == 'win32'"]
+fidelity = ["pymupdf>=1.24", "numpy>=1.24", "pillow>=10"]
 
 [project.scripts]
 cli-anything-illustrator = "cli_anything.illustrator.cli:main"

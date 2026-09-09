@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400pt" height="300pt">
+<rect width="400" height="300" fill="white"/>
+<rect x="30" y="30" width="120" height="80" fill="#4477aa" stroke="black"/>
+<circle cx="300" cy="80" r="45" fill="#ee6677"/>
+<path d="M40 250 C 120 180, 200 260, 360 190" stroke="#228833" stroke-width="4" fill="none"/>
+<text x="40" y="140" font-family="Helvetica" font-size="16">Panel A: synthetic</text>
+<text x="250" y="160" font-family="Helvetica" font-size="12">reference text</text>
+</svg>

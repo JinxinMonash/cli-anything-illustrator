@@ -1,0 +1,133 @@
+{
+  "reference": {
+    "path": "validation_evidence_mock/reconstruction/ref.png",
+    "width_px": 834,
+    "height_px": 625
+  },
+  "candidate": {
+    "path": "validation_evidence_mock/reconstruction/var.png",
+    "width_px": 834,
+    "height_px": 625,
+    "resized": false
+  },
+  "dpi": 150.0,
+  "tile_size": 64,
+  "metrics": {
+    "pixel_mae": 12.7513,
+    "rmse": 42.3009,
+    "ssim": 0.96565,
+    "edge_similarity": 0.824924,
+    "color_delta": 7.4439
+  },
+  "largest_differences": [
+    {
+      "bbox_px": [
+        0,
+        0,
+        192,
+        256
+      ],
+      "bbox_pt": [
+        0.0,
+        0.0,
+        92.16,
+        122.88
+      ],
+      "tiles": 9,
+      "score": 1.0,
+      "severity": "high",
+      "color_delta": 58.66,
+      "edge_density": 0.0565,
+      "probable_type": "geometry",
+      "rank": 1
+    },
+    {
+      "bbox_px": [
+        256,
+        0,
+        384,
+        256
+      ],
+      "bbox_pt": [
+        122.88,
+        0.0,
+        184.32,
+        122.88
+      ],
+      "tiles": 7,
+      "score": 1.0,
+      "severity": "high",
+      "color_delta": 54.36,
+      "edge_density": 0.0814,
+      "probable_type": "geometry",
+      "rank": 2
+    },
+    {
+      "bbox_px": [
+        512,
+        64,
+        768,
+        256
+      ],
+      "bbox_pt": [
+        245.76,
+        30.72,
+        368.64,
+        122.88
+      ],
+      "tiles": 10,
+      "score": 1.0,
+      "severity": "high",
+      "color_delta": 87.24,
+      "edge_density": 0.0283,
+      "probable_type": "color",
+      "rank": 3
+    },
+    {
+      "bbox_px": [
+        512,
+        320,
+        640,
+        384
+      ],
+      "bbox_pt": [
+        245.76,
+        153.6,
+        307.2,
+        184.32
+      ],
+      "tiles": 2,
+      "score": 0.2475,
+      "severity": "med",
+      "color_delta": 9.28,
+      "edge_density": 0.1997,
+      "probable_type": "text",
+      "rank": 4
+    },
+    {
+      "bbox_px": [
+        512,
+        256,
+        704,
+        384
+      ],
+      "bbox_pt": [
+        245.76,
+        122.88,
+        337.92,
+        184.32
+      ],
+      "tiles": 4,
+      "score": 0.1788,
+      "severity": "low",
+      "color_delta": 6.02,
+      "edge_density": 0.1104,
+      "probable_type": "geometry",
+      "rank": 5
+    }
+  ],
+  "artifacts": {
+    "heatmap_png": "validation_evidence_mock/reconstruction/diff_heatmap.png",
+    "overlay_png": "validation_evidence_mock/reconstruction/diff_overlay.png"
+  }
+}

@@ -2,10 +2,19 @@
  *
  * Implements just enough of the ExtendScript object model to execute the
  * real JSX templates (prelude + ops) outside Illustrator: documents, layers,
- * page items, text frames, fonts, File, enums, saveAs/exportFile stubs, and
- * an SVG reader that models matplotlib exports (svg.fonttype='none').
+ * page items, path points (anchors/handles), compound paths, clipping
+ * groups, gradients, text frames with character/paragraph attributes, fonts,
+ * File, enums, saveAs/exportFile stubs, and an SVG reader that models
+ * matplotlib exports (svg.fonttype='none').
  * State persists across processes via $MOCK_AI_STATE so multi-command CLI
  * workflows behave like one Illustrator session.
+ *
+ * Mock approximations (documented, asserted only to bbox precision):
+ *  - Path bounds are the hull of anchors+handles, not true Bezier extremes.
+ *  - Rotation transforms path points exactly; for non-path items it rotates
+ *    the bounding-box corners and takes the new bbox.
+ *  - doc.pageItems descends into compound paths (real AI exposes members
+ *    via doc.pathItems only).
  *
  * THIS IS A MOCK: passing here is NOT evidence of live Illustrator behaviour
  * (see tests/integration + scripts/run_mac_validation.sh for that).
@@ -25,8 +34,19 @@ Object.defineProperty(MockFile.prototype, "exists", {
     get() { return fs.existsSync(this.fsName); }
 });
 
-function RGBColor() { this.red = 0; this.green = 0; this.blue = 0; }
-function CMYKColor() { this.cyan = 0; this.magenta = 0; this.yellow = 0; this.black = 0; }
+function RGBColor() { this.typename = "RGBColor"; this.red = 0; this.green = 0; this.blue = 0; }
+function CMYKColor() { this.typename = "CMYKColor"; this.cyan = 0; this.magenta = 0; this.yellow = 0; this.black = 0; }
+function GrayColor() { this.typename = "GrayColor"; this.gray = 0; }
+function NoColor() { this.typename = "NoColor"; }
+function GradientColor() {
+    this.typename = "GradientColor";
+    this.gradient = null;
+    this.angle = 0;
+    this.origin = [0, 0];
+    this.length = 100;
+    this.hiliteAngle = 0;
+    this.hiliteLength = 0;
+}
 
 const DocumentColorSpace = { RGB: "DocumentColorSpace.RGB", CMYK: "DocumentColorSpace.CMYK" };
 const ElementPlacement = { PLACEATEND: "end", PLACEATBEGINNING: "begin" };
@@ -38,6 +58,23 @@ const Justification = { LEFT: "left", CENTER: "center", RIGHT: "right" };
 const UserInteractionLevel = { DONTDISPLAYALERTS: "dont", DISPLAYALERTS: "display" };
 const SVGFontSubsetting = { None: "none", GLYPHSUSED: "glyphs" };
 const SVGFontType = { SVGFONT: "svgfont", OUTLINEFONT: "outline" };
+const StrokeCap = {
+    BUTTENDCAP: "StrokeCap.BUTTENDCAP",
+    ROUNDENDCAP: "StrokeCap.ROUNDENDCAP",
+    PROJECTINGENDCAP: "StrokeCap.PROJECTINGENDCAP",
+};
+const StrokeJoin = {
+    MITERENDJOIN: "StrokeJoin.MITERENDJOIN",
+    ROUNDENDJOIN: "StrokeJoin.ROUNDENDJOIN",
+    BEVELENDJOIN: "StrokeJoin.BEVELENDJOIN",
+};
+const PointType = { SMOOTH: "PointType.SMOOTH", CORNER: "PointType.CORNER" };
+const GradientType = { LINEAR: "GradientType.LINEAR", RADIAL: "GradientType.RADIAL" };
+const TextType = {
+    POINTTEXT: "TextType.POINTTEXT",
+    AREATEXT: "TextType.AREATEXT",
+    PATHTEXT: "TextType.PATHTEXT",
+};
 
 function ExportOptionsPNG24() {
     this.antiAliasing = true; this.transparency = true;
@@ -51,6 +88,58 @@ function PDFSaveOptions() { this.preserveEditability = true; this.viewAfterSavin
 function IllustratorSaveOptions() { this.pdfCompatible = true; this.embedICCProfile = false; this.compressed = false; }
 
 function TextFont(name, family, style) { this.name = name; this.family = family; this.style = style; }
+
+// ---------------- gradients ----------------
+class GradientStop {
+    constructor(owner, ramp) {
+        this.typename = "GradientStop";
+        this._owner = owner;
+        this.rampPoint = ramp;
+        this.midPoint = 50;
+        this.color = new RGBColor();
+        this.opacity = 100;
+    }
+    remove() {
+        const i = this._owner._stops.indexOf(this);
+        if (i >= 0) this._owner._stops.splice(i, 1);
+    }
+}
+class Gradient {
+    constructor(name) {
+        this.typename = "Gradient";
+        this.name = name || "";
+        this.type = GradientType.LINEAR;
+        this._stops = [new GradientStop(this, 0), new GradientStop(this, 100)];
+        this._stops[1].color.red = 255;
+        this._stops[1].color.green = 255;
+        this._stops[1].color.blue = 255;
+    }
+    get gradientStops() {
+        const arr = this._stops.slice();
+        const self = this;
+        arr.add = () => { const s = new GradientStop(self, 100); self._stops.push(s); return s; };
+        return arr;
+    }
+}
+
+// ---------------- path points ----------------
+class PathPoint {
+    constructor(owner, anchor) {
+        this._o = owner;
+        this._anchor = [anchor[0], anchor[1]];
+        this._left = [anchor[0], anchor[1]];
+        this._right = [anchor[0], anchor[1]];
+        this._type = PointType.CORNER;
+    }
+    get anchor() { return this._anchor.slice(); }
+    set anchor(v) { this._anchor = [v[0], v[1]]; this._o._recalcFromPts(); }
+    get leftDirection() { return this._left.slice(); }
+    set leftDirection(v) { this._left = [v[0], v[1]]; this._o._recalcFromPts(); }
+    get rightDirection() { return this._right.slice(); }
+    set rightDirection(v) { this._right = [v[0], v[1]]; this._o._recalcFromPts(); }
+    get pointType() { return this._type; }
+    set pointType(v) { this._type = v; }
+}
 
 // ---------------- items ----------------
 class Item {
@@ -81,15 +170,41 @@ class Item {
         const b = this._bounds();
         this.translate(pt[0] - b[0], pt[1] - b[1]);
     }
-    translate(dx, dy) { this._b = [this._b[0] + dx, this._b[1] + dy, this._b[2] + dx, this._b[3] + dy]; }
-    _scaleAbout(ox, oy, s) {
-        this._b = [ox + (this._b[0] - ox) * s, oy + (this._b[1] - oy) * s,
-                   ox + (this._b[2] - ox) * s, oy + (this._b[3] - oy) * s];
-        this.strokeWidth *= s;
-    }
-    resize(sx, sy, cp, cfp, cfg, csp, lw, about) {
+    _corners() {
         const b = this._bounds();
-        this._scaleAbout(b[0], b[1], sx / 100);
+        return [[b[0], b[1]], [b[2], b[1]], [b[2], b[3]], [b[0], b[3]]];
+    }
+    // Apply a point mapping to the item geometry (bbox corners by default).
+    _applyPointTransform(f) {
+        const cs = this._corners().map(c => f(c[0], c[1]));
+        const xs = cs.map(c => c[0]), ys = cs.map(c => c[1]);
+        this._b = [Math.min(...xs), Math.max(...ys), Math.max(...xs), Math.min(...ys)];
+    }
+    translate(dx, dy) { this._applyPointTransform((x, y) => [x + dx, y + dy]); }
+    _origin(about) {
+        const b = this._bounds();
+        if (about === Transformation.CENTER) return [(b[0] + b[2]) / 2, (b[1] + b[3]) / 2];
+        return [b[0], b[1]]; // historical mock default: top-left
+    }
+    _applyScale(o, kx, ky) {
+        this._applyPointTransform((x, y) => [o[0] + (x - o[0]) * kx, o[1] + (y - o[1]) * ky]);
+    }
+    _scaleStrokes(s) { this.strokeWidth *= s; }
+    resize(sx, sy, cp, cfp, cfg, csp, lw, about) {
+        if (sy === undefined || sy === null) sy = sx;
+        const o = this._origin(about);
+        this._applyScale(o, sx / 100, sy / 100);
+        const lwp = (lw === undefined || lw === null) ? sx : lw;
+        this._scaleStrokes(lwp / 100);
+    }
+    rotate(angle, cp, cfp, cfg, csp, about) {
+        const o = this._origin(about === undefined ? Transformation.CENTER : about);
+        const rad = angle * Math.PI / 180;
+        const cos = Math.cos(rad), sin = Math.sin(rad);
+        this._applyPointTransform((x, y) => [
+            o[0] + (x - o[0]) * cos - (y - o[1]) * sin,
+            o[1] + (x - o[0]) * sin + (y - o[1]) * cos,
+        ]);
     }
     _container(target) {
         if (target instanceof Layer) return target.items;
@@ -132,13 +247,60 @@ class Item {
 }
 
 class PathItem extends Item {
-    constructor() { super("PathItem"); }
+    constructor() {
+        super("PathItem");
+        this._pts = [];
+        this.closed = false;
+        this.strokeCap = StrokeCap.BUTTENDCAP;
+        this.strokeJoin = StrokeJoin.MITERENDJOIN;
+        this.strokeDashes = [];
+        this.strokeDashOffset = 0;
+        this.strokeMiterLimit = 4;
+    }
     setEntirePath(pts) {
-        const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+        this._pts = pts.map(p => new PathPoint(this, p));
+        this._recalcFromPts();
+    }
+    get pathPoints() {
+        const arr = this._pts.slice();
+        const self = this;
+        arr.add = () => { const pp = new PathPoint(self, [0, 0]); self._pts.push(pp); return pp; };
+        return arr;
+    }
+    _recalcFromPts() {
+        if (!this._pts.length) return;
+        const xs = [], ys = [];
+        for (const p of this._pts) {
+            xs.push(p._anchor[0], p._left[0], p._right[0]);
+            ys.push(p._anchor[1], p._left[1], p._right[1]);
+        }
         this._b = [Math.min(...xs), Math.max(...ys), Math.max(...xs), Math.min(...ys)];
     }
+    _applyPointTransform(f) {
+        if (this._pts.length) {
+            for (const p of this._pts) {
+                p._anchor = f(p._anchor[0], p._anchor[1]);
+                p._left = f(p._left[0], p._left[1]);
+                p._right = f(p._right[0], p._right[1]);
+            }
+            this._recalcFromPts();
+        } else {
+            super._applyPointTransform(f);
+        }
+    }
+    _clone() {
+        const c = super._clone();
+        c._pts = this._pts.map(p => {
+            const pp = new PathPoint(c, p._anchor);
+            pp._left = p._left.slice();
+            pp._right = p._right.slice();
+            pp._type = p._type;
+            return pp;
+        });
+        c.strokeDashes = this.strokeDashes.slice();
+        return c;
+    }
 }
-class CompoundPathItem extends Item { constructor() { super("CompoundPathItem"); } }
 class RasterItem extends Item { constructor() { super("RasterItem"); } }
 class SymbolItem extends Item { constructor() { super("SymbolItem"); } }
 class PlacedItem extends Item {
@@ -161,7 +323,10 @@ class TextFrame extends Item {
         this._anchor = [0, 0];
         this._kind = "point";
         const self = this;
-        this._attrs = { size: 12, textFont: appFonts[0], fillColor: new RGBColor() };
+        this._attrs = {
+            size: 12, textFont: appFonts[0], fillColor: new RGBColor(),
+            tracking: 0, leading: 14.4, autoLeading: true,
+        };
         this._para = { justification: Justification.LEFT };
         this.textRange = {
             get characterAttributes() { return self._attrs; },
@@ -170,6 +335,16 @@ class TextFrame extends Item {
     }
     get contents() { return this._contents; }
     set contents(v) { this._contents = String(v); this._reflow(); }
+    get kind() { return this._kind === "area" ? TextType.AREATEXT : TextType.POINTTEXT; }
+    get textPath() {
+        const self = this;
+        return {
+            get width() { return self._b[2] - self._b[0]; },
+            set width(w) { self._b[2] = self._b[0] + w; },
+            get height() { return self._b[1] - self._b[3]; },
+            set height(h) { self._b[3] = self._b[1] - h; },
+        };
+    }
     _reflow() {
         const w = Math.max(4, this._contents.length * this._attrs.size * 0.55);
         const h = this._attrs.size * 1.2;
@@ -178,7 +353,10 @@ class TextFrame extends Item {
                        this._anchor[0] + w, this._anchor[1] + this._attrs.size - h];
         }
     }
-    translate(dx, dy) { super.translate(dx, dy); this._anchor = [this._anchor[0] + dx, this._anchor[1] + dy]; }
+    _applyPointTransform(f) {
+        super._applyPointTransform(f);
+        this._anchor = f(this._anchor[0], this._anchor[1]);
+    }
     _clone() {
         const c = super._clone();
         c._contents = this._contents;
@@ -194,29 +372,38 @@ class TextFrame extends Item {
     }
 }
 class Group extends Item {
-    constructor() { super("GroupItem"); this.children = []; }
+    constructor() { super("GroupItem"); this.children = []; this.clipped = false; }
     _bounds() {
         if (!this.children.length) return [0, 0, 0, 0];
+        if (this.clipped) {
+            const cl = this.children.find(c => c.clipping);
+            if (cl) return cl._bounds();
+        }
         const bs = this.children.map(c => c._bounds());
         return [Math.min(...bs.map(b => b[0])), Math.max(...bs.map(b => b[1])),
                 Math.max(...bs.map(b => b[2])), Math.min(...bs.map(b => b[3]))];
     }
-    translate(dx, dy) { this.children.forEach(c => c.translate(dx, dy)); }
-    _scaleAbout(ox, oy, s) {
+    _applyPointTransform(f) { this.children.forEach(c => c._applyPointTransform(f)); }
+    _applyScale(o, kx, ky) {
         this.children.forEach(c => {
-            c._scaleAbout(ox, oy, s);
-            if (c instanceof TextFrame) c._attrs.size *= s;
+            c._applyScale(o, kx, ky);
+            if (c instanceof TextFrame) c._attrs.size *= (kx + ky) / 2;
         });
     }
-    resize(sx) { const b = this._bounds(); this._scaleAbout(b[0], b[1], sx / 100); }
+    _scaleStrokes(s) { this.children.forEach(c => c._scaleStrokes(s)); }
     get pageItems() { return this.children.slice(); }
     _clone() {
-        const c = new Group();
+        const c = new this.constructor();
         Object.assign(c, { name: this.name, locked: this.locked, hidden: this.hidden,
-                           opacity: this.opacity, uuid: nextUuid(), parentRef: null });
+                           opacity: this.opacity, clipped: this.clipped,
+                           uuid: nextUuid(), parentRef: null });
         c.children = this.children.map(ch => { const k = ch._clone(); k.parentRef = c; return k; });
         return c;
     }
+}
+class CompoundPathItem extends Group {
+    constructor() { super(); this.typename = "CompoundPathItem"; }
+    get pathItems() { return this.children.filter(c => c.typename === "PathItem"); }
 }
 
 class Layer {
@@ -229,6 +416,9 @@ class Layer {
         const self = this;
         this.groupItems = {
             add() { const g = new Group(); g.parentRef = self; self.items.unshift(g); return g; }
+        };
+        this.compoundPathItems = {
+            add() { const c = new CompoundPathItem(); c.parentRef = self; self.items.unshift(c); return c; }
         };
     }
     _descend(list, out) {
@@ -255,6 +445,7 @@ class Document {
         this.saved = false; // Illustrator: false == has unsaved changes
         this.documentColorSpace = cs || DocumentColorSpace.RGB;
         this.layerList = [];
+        this.gradientList = [];
         this.artboardList = [{ name: "Artboard 1", artboardRect: [0, h || 792, w || 612, 0] }];
         this._activeAb = 0;
         const ly = new Layer("Layer 1");
@@ -280,6 +471,21 @@ class Document {
         const arr = this.artboardList.slice();
         const self = this;
         arr.setActiveArtboardIndex = function (i) { self._activeAb = i; };
+        return arr;
+    }
+    get gradients() {
+        const arr = this.gradientList.slice();
+        const self = this;
+        arr.add = function () {
+            const g = new Gradient("Unnamed gradient " + (self.gradientList.length + 1));
+            self.gradientList.push(g);
+            return g;
+        };
+        arr.getByName = function (n) {
+            const g = self.gradientList.find(x => x.name === n);
+            if (!g) throw new Error("no such element");
+            return g;
+        };
         return arr;
     }
     _all() { const out = []; for (const ly of this.layerList) ly._descend(ly.items, out); return out; }
@@ -355,47 +561,141 @@ class Document {
 }
 
 // ---------------- serialization (state across processes) ----------------
+function serColor(c) {
+    if (!c) return null;
+    if (c.typename === "GradientColor") {
+        return { k: "gradient", name: c.gradient ? c.gradient.name : null,
+                 angle: c.angle, origin: c.origin, length: c.length };
+    }
+    if (c.typename === "CMYKColor") return { k: "cmyk", v: [c.cyan, c.magenta, c.yellow, c.black] };
+    if (c.typename === "GrayColor") return { k: "gray", v: c.gray };
+    if (c.typename === "NoColor") return { k: "none" };
+    return { k: "rgb", v: [c.red || 0, c.green || 0, c.blue || 0] };
+}
+function desColor(d, gmap) {
+    if (!d) return null;
+    if (d.k === "gradient") {
+        const gc = new GradientColor();
+        gc.gradient = (gmap && gmap[d.name]) || new Gradient(d.name);
+        gc.angle = d.angle || 0;
+        gc.origin = d.origin || [0, 0];
+        if (d.length !== undefined && d.length !== null) gc.length = d.length;
+        return gc;
+    }
+    if (d.k === "cmyk") {
+        const c = new CMYKColor();
+        [c.cyan, c.magenta, c.yellow, c.black] = d.v;
+        return c;
+    }
+    if (d.k === "gray") { const g = new GrayColor(); g.gray = d.v; return g; }
+    if (d.k === "none") return new NoColor();
+    const r = new RGBColor();
+    [r.red, r.green, r.blue] = d.v;
+    return r;
+}
 function serializeItem(it) {
     const base = { t: it.typename, name: it.name, uuid: it.uuid, b: it._b,
                    locked: it.locked, hidden: it.hidden, opacity: it.opacity,
                    clipping: it.clipping, strokeWidth: it.strokeWidth,
-                   filled: it.filled, stroked: it.stroked };
+                   filled: it.filled, stroked: it.stroked,
+                   fill: serColor(it.fillColor), stroke: serColor(it.strokeColor) };
     if (it instanceof TextFrame) {
         base.contents = it._contents; base.anchor = it._anchor; base.kind = it._kind;
         base.size = it._attrs.size; base.font = it._attrs.textFont ? it._attrs.textFont.name : null;
+        base.tracking = it._attrs.tracking; base.leading = it._attrs.leading;
+        base.autoLeading = it._attrs.autoLeading;
+        base.tfill = serColor(it._attrs.fillColor);
+        base.justification = it._para.justification;
     }
-    if (it instanceof Group) base.children = it.children.map(serializeItem);
+    if (it instanceof PathItem) {
+        base.closed = it.closed;
+        base.pts = it._pts.map(p => ({ a: p._anchor, l: p._left, r: p._right, pt: p._type }));
+        base.cap = it.strokeCap; base.join = it.strokeJoin;
+        base.dashes = it.strokeDashes; base.dashOffset = it.strokeDashOffset;
+        base.miter = it.strokeMiterLimit;
+    }
+    if (it instanceof Group) {
+        base.children = it.children.map(serializeItem);
+        base.clipped = it.clipped;
+    }
     if (it instanceof PlacedItem) base.file = it._file ? it._file.fsName : null;
     return base;
 }
-function deserializeItem(d) {
+function deserializeItem(d, gmap) {
     let it;
     if (d.t === "TextFrame") {
         it = new TextFrame();
         it._contents = d.contents || ""; it._anchor = d.anchor || [0, 0]; it._kind = d.kind || "point";
         it._attrs.size = d.size || 12;
         it._attrs.textFont = appFonts.find(f => f.name === d.font) || appFonts[0];
-    } else if (d.t === "GroupItem") {
-        it = new Group();
-        it.children = (d.children || []).map(c => { const k = deserializeItem(c); k.parentRef = it; return k; });
+        it._attrs.tracking = d.tracking || 0;
+        it._attrs.leading = (d.leading === undefined || d.leading === null) ? 14.4 : d.leading;
+        it._attrs.autoLeading = (d.autoLeading === undefined) ? true : d.autoLeading;
+        if (d.tfill) it._attrs.fillColor = desColor(d.tfill, gmap);
+        if (d.justification) it._para.justification = d.justification;
+    } else if (d.t === "GroupItem" || d.t === "CompoundPathItem") {
+        it = (d.t === "CompoundPathItem") ? new CompoundPathItem() : new Group();
+        it.clipped = !!d.clipped;
+        it.children = (d.children || []).map(c => { const k = deserializeItem(c, gmap); k.parentRef = it; return k; });
     } else if (d.t === "PlacedItem") {
         it = new PlacedItem();
         if (d.file) it._file = new MockFile(d.file);
     } else if (d.t === "RasterItem") { it = new RasterItem(); }
-    else if (d.t === "CompoundPathItem") { it = new CompoundPathItem(); }
-    else { it = new PathItem(); }
+    else if (d.t === "SymbolItem") { it = new SymbolItem(); }
+    else {
+        it = new PathItem();
+        it.closed = !!d.closed;
+        if (d.pts) {
+            it._pts = d.pts.map(q => {
+                const pp = new PathPoint(it, q.a);
+                pp._left = q.l.slice(); pp._right = q.r.slice();
+                pp._type = q.pt || PointType.CORNER;
+                return pp;
+            });
+        }
+        if (d.cap) it.strokeCap = d.cap;
+        if (d.join) it.strokeJoin = d.join;
+        if (d.dashes) it.strokeDashes = d.dashes.slice();
+        if (d.dashOffset !== undefined && d.dashOffset !== null) it.strokeDashOffset = d.dashOffset;
+        if (d.miter !== undefined && d.miter !== null) it.strokeMiterLimit = d.miter;
+    }
     Object.assign(it, { name: d.name, uuid: d.uuid, locked: d.locked, hidden: d.hidden,
                         opacity: d.opacity, clipping: d.clipping, strokeWidth: d.strokeWidth,
                         filled: d.filled, stroked: d.stroked });
+    it.fillColor = desColor(d.fill, gmap);
+    it.strokeColor = desColor(d.stroke, gmap);
     it._b = d.b;
     if (parseInt(d.uuid, 10) > uuidCounter) uuidCounter = parseInt(d.uuid, 10);
     return it;
+}
+function serializeGradient(g) {
+    return {
+        name: g.name, type: g.type,
+        stops: g._stops.map(s => ({ ramp: s.rampPoint, mid: s.midPoint,
+                                    color: serColor(s.color), opacity: s.opacity })),
+    };
+}
+function deserializeGradient(d) {
+    const g = new Gradient(d.name);
+    g.type = d.type || GradientType.LINEAR;
+    g._stops = (d.stops || []).map(s => {
+        const st = new GradientStop(g, s.ramp);
+        st.midPoint = (s.mid === undefined || s.mid === null) ? 50 : s.mid;
+        st.color = desColor(s.color) || new RGBColor();
+        st.opacity = (s.opacity === undefined || s.opacity === null) ? 100 : s.opacity;
+        return st;
+    });
+    if (g._stops.length < 2) {
+        g._stops = [new GradientStop(g, 0), new GradientStop(g, 100)];
+    }
+    return g;
 }
 function serializeDoc(doc) {
     return {
         name: doc.name, path: doc.fullNameFile ? doc.fullNameFile.fsName : null,
         saved: doc.saved, cs: doc.documentColorSpace,
         artboards: doc.artboardList,
+        gradients: doc.gradientList.map(serializeGradient),
         layers: doc.layerList.map(ly => ({
             name: ly.name, visible: ly.visible, locked: ly.locked, printable: ly.printable,
             items: ly.items.map(serializeItem)
@@ -410,11 +710,14 @@ function deserializeDoc(d) {
     doc.saved = d.saved;
     doc.fullNameFile = d.path ? new MockFile(d.path) : null;
     doc.artboardList = d.artboards;
+    doc.gradientList = (d.gradients || []).map(deserializeGradient);
+    const gmap = {};
+    for (const g of doc.gradientList) gmap[g.name] = g;
     doc.layerList = d.layers.map(l => {
         const ly = new Layer(l.name);
         ly._doc = doc;
         ly.visible = l.visible; ly.locked = l.locked; ly.printable = l.printable;
-        ly.items = l.items.map(i => { const it = deserializeItem(i); it.parentRef = ly; return it; });
+        ly.items = l.items.map(i => { const it = deserializeItem(i, gmap); it.parentRef = ly; return it; });
         return ly;
     });
     doc.activeLayer = doc.layerList.find(l => !l.locked) || doc.layerList[0];
@@ -556,10 +859,12 @@ function saveState() {
 module.exports = {
     installGlobals(g) {
         Object.assign(g, {
-            app, $, File: MockFile, RGBColor, CMYKColor, TextFont,
+            app, $, File: MockFile, RGBColor, CMYKColor, GrayColor, NoColor,
+            GradientColor, TextFont,
             DocumentColorSpace, ElementPlacement, SaveOptions, ExportType,
             Transformation, ZOrderMethod, Justification, UserInteractionLevel,
-            SVGFontSubsetting, SVGFontType, ExportOptionsPNG24, ExportOptionsSVG,
+            SVGFontSubsetting, SVGFontType, StrokeCap, StrokeJoin, PointType,
+            GradientType, TextType, ExportOptionsPNG24, ExportOptionsSVG,
             PDFSaveOptions, IllustratorSaveOptions,
         });
     },

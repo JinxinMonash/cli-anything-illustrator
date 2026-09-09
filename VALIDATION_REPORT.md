@@ -3,6 +3,29 @@
 **Last updated:** 2026-09-09 (UTC) · v0.9.4
 **Build environment:** Linux x86_64, Python 3.11, Node 18 — portable suite 92+ tests passing
 
+## v0.10.0 — reference reconstruction (evidence summary)
+
+**Executed on this Linux build machine (real evidence):**
+- Portable suite: **190 passed** (object-model mock e2e, fidelity engine
+  units, reconstruct workflows, CLI help/exit-code contracts, JSX syntax).
+- Perturbation-localization benchmark (real comparison engine, no mock):
+  synthetic SVG pair with a moved rectangle, an isoluminant recolour and a
+  text edit at 150 dpi -> all three localized as merged regions with correct
+  types (geometry/color/text); self-compare returns SSIM > 0.999 with zero
+  regions. Evidence: `validation_evidence_mock/reconstruction/`.
+- Two engine defects were FOUND BY this benchmark and fixed: (1) isoluminant
+  colour changes were invisible to SSIM-only region triggering; (2) one
+  moved object flooded the region cap as many adjacent tiles. Region
+  detection is now colour-aware and merges same-type connected tiles.
+
+**Mock-only evidence (not live Illustrator):** reconstruct routing
+(native_open / raster_template), locked template layers, manifest structure,
+editability scoring against mock documents.
+
+**NOT RUN here (live Mac required):** Illustrator's actual PDF/SVG/EPS import
+fidelity, Image Trace (`--trace`), real export-vs-reference metrics. Covered
+by `tests/integration/TestReconstructLive` and `scripts/run_mac_validation.sh`.
+
 ## Summary
 
 Developed on Linux without macOS or Adobe Illustrator. Everything marked PASS

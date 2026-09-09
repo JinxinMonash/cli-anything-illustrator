@@ -18,12 +18,30 @@
             if (U.size) attrs.size = U.size;
             if (fontInfo && fontInfo.font) attrs.textFont = fontInfo.font;
             if (U.color) attrs.fillColor = CAI.rgb(U.color);
+            if (U.tracking !== undefined && U.tracking !== null) attrs.tracking = U.tracking;
+            if (U.leading !== undefined && U.leading !== null) {
+                try { attrs.autoLeading = false; } catch (eL) {}
+                attrs.leading = U.leading;
+            }
+            if (U.justification) {
+                tf.textRange.paragraphAttributes.justification =
+                    CAI.justificationFrom(U.justification);
+            }
+            if ((U.width !== undefined && U.width !== null) ||
+                (U.height !== undefined && U.height !== null)) {
+                var isArea = false;
+                try { isArea = (String(tf.kind) === String(TextType.AREATEXT)); } catch (eK) {}
+                if (!isArea)
+                    throw CAI.err("BAD_PARAMS",
+                        "width/height resize applies only to area text frames.");
+                if (U.width !== undefined && U.width !== null) tf.textPath.width = U.width;
+                if (U.height !== undefined && U.height !== null) tf.textPath.height = U.height;
+            }
             if (U.x !== undefined && U.x !== null && U.y !== undefined && U.y !== null) {
                 tf.position = CAI.toAI(doc, ab, U.x, U.y);
             }
             if (U.new_name) tf.name = String(U.new_name);
-            var after = CAI.describeItem(doc, ab, tf);
-            after.contents_full = String(tf.contents);
+            var after = CAI.describeTextDeep(doc, ab, tf);
             results.push({ before: before, after: after });
         }
         return CAI.ok({ updated: results.length, items: results,

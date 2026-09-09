@@ -322,6 +322,179 @@ CAI.docInfo = function (doc) {
     return info;
 };
 
+// ---------- expanded object model helpers ----------
+// Stroke cap / join names <-> ExtendScript enums.
+CAI.strokeCapFrom = function (s) {
+    var v = String(s).toLowerCase();
+    if (v === "butt") return StrokeCap.BUTTENDCAP;
+    if (v === "round") return StrokeCap.ROUNDENDCAP;
+    if (v === "projecting" || v === "square") return StrokeCap.PROJECTINGENDCAP;
+    throw CAI.err("BAD_PARAMS", "Unknown stroke cap: " + s + " (use butt|round|projecting)");
+};
+CAI.strokeCapName = function (v) {
+    var s = String(v);
+    if (s === String(StrokeCap.BUTTENDCAP)) return "butt";
+    if (s === String(StrokeCap.ROUNDENDCAP)) return "round";
+    if (s === String(StrokeCap.PROJECTINGENDCAP)) return "projecting";
+    return s;
+};
+CAI.strokeJoinFrom = function (s) {
+    var v = String(s).toLowerCase();
+    if (v === "miter") return StrokeJoin.MITERENDJOIN;
+    if (v === "round") return StrokeJoin.ROUNDENDJOIN;
+    if (v === "bevel") return StrokeJoin.BEVELENDJOIN;
+    throw CAI.err("BAD_PARAMS", "Unknown stroke join: " + s + " (use miter|round|bevel)");
+};
+CAI.strokeJoinName = function (v) {
+    var s = String(v);
+    if (s === String(StrokeJoin.MITERENDJOIN)) return "miter";
+    if (s === String(StrokeJoin.ROUNDENDJOIN)) return "round";
+    if (s === String(StrokeJoin.BEVELENDJOIN)) return "bevel";
+    return s;
+};
+CAI.justificationFrom = function (s) {
+    var v = String(s).toLowerCase();
+    if (v === "left") return Justification.LEFT;
+    if (v === "center" || v === "centre") return Justification.CENTER;
+    if (v === "right") return Justification.RIGHT;
+    throw CAI.err("BAD_PARAMS", "Unknown justification: " + s + " (use left|center|right)");
+};
+CAI.justificationName = function (v) {
+    var s = String(v);
+    if (s === String(Justification.LEFT)) return "left";
+    if (s === String(Justification.CENTER)) return "center";
+    if (s === String(Justification.RIGHT)) return "right";
+    return s;
+};
+
+// Structured description of any paint value.
+CAI.describeColor = function (c) {
+    if (c === null || c === undefined) return { type: "none" };
+    var t = "";
+    try { t = String(c.typename); } catch (e) { t = ""; }
+    if (t === "RGBColor") return { type: "rgb", rgb: [c.red, c.green, c.blue] };
+    if (t === "CMYKColor") return { type: "cmyk", cmyk: [c.cyan, c.magenta, c.yellow, c.black] };
+    if (t === "GrayColor") return { type: "gray", gray: c.gray };
+    if (t === "NoColor") return { type: "none" };
+    if (t === "GradientColor") {
+        var g = { type: "gradient", gradient: null, angle: 0 };
+        try { g.gradient = String(c.gradient.name); } catch (e1) {}
+        try { g.angle = c.angle; } catch (e2) {}
+        return g;
+    }
+    if (t === "SpotColor") {
+        var sp = { type: "spot", name: null };
+        try { sp.name = String(c.spot.name); } catch (e3) {}
+        return sp;
+    }
+    if (t === "PatternColor") return { type: "pattern" };
+    return { type: t !== "" ? t : "unknown" };
+};
+
+// Look up a document gradient by name.
+CAI.getGradient = function (doc, name) {
+    var want = String(name);
+    for (var i = 0; i < doc.gradients.length; i++) {
+        if (String(doc.gradients[i].name) === want) return doc.gradients[i];
+    }
+    var names = [];
+    for (var j = 0; j < doc.gradients.length; j++) names.push(String(doc.gradients[j].name));
+    throw CAI.err("GRADIENT_NOT_FOUND", "No gradient named: " + want,
+                  { defined_gradients: names });
+};
+
+// Collect every PathItem reachable from an item (path itself, members of a
+// compound path, recursive contents of a group).
+CAI.collectPaths = function (item, out) {
+    var t = CAI.typeName(item);
+    if (t === "path") { out.push(item); return out; }
+    if (t === "compound") {
+        for (var i = 0; i < item.pathItems.length; i++) out.push(item.pathItems[i]);
+        return out;
+    }
+    if (t === "group") {
+        var kids = item.pageItems;
+        for (var j = 0; j < kids.length; j++) CAI.collectPaths(kids[j], out);
+    }
+    return out;
+};
+
+// Deep path descriptor: anchors/handles in CANVAS coordinates, paint, stroke
+// style. `limit` caps the number of anchors returned (default 1000).
+CAI.describePathDeep = function (doc, abIndex, p, limit) {
+    var d = CAI.describeItem(doc, abIndex, p);
+    var cap = (limit === undefined || limit === null) ? 1000 : limit;
+    d.closed = false;
+    try { d.closed = !!p.closed; } catch (e0) {}
+    var n = 0;
+    try { n = p.pathPoints.length; } catch (e1) { n = 0; }
+    d.anchor_count = n;
+    var anchors = [];
+    for (var i = 0; i < n && i < cap; i++) {
+        var pp = p.pathPoints[i];
+        var row = {
+            anchor: CAI.fromAI(doc, abIndex, pp.anchor[0], pp.anchor[1]),
+            left: CAI.fromAI(doc, abIndex, pp.leftDirection[0], pp.leftDirection[1]),
+            right: CAI.fromAI(doc, abIndex, pp.rightDirection[0], pp.rightDirection[1]),
+            type: "corner"
+        };
+        try {
+            if (String(pp.pointType) === String(PointType.SMOOTH)) row.type = "smooth";
+        } catch (e2) {}
+        anchors.push(row);
+    }
+    d.anchors = anchors;
+    d.anchors_truncated = n > cap;
+    d.fill = p.filled ? CAI.describeColor(p.fillColor) : { type: "none" };
+    d.stroke = p.stroked ? CAI.describeColor(p.strokeColor) : { type: "none" };
+    d.stroke_width = p.strokeWidth;
+    d.opacity = p.opacity;
+    d.cap = null; d.join = null; d.dash = []; d.dash_offset = 0; d.miter_limit = null;
+    try { d.cap = CAI.strokeCapName(p.strokeCap); } catch (e3) {}
+    try { d.join = CAI.strokeJoinName(p.strokeJoin); } catch (e4) {}
+    try {
+        var dd = p.strokeDashes;
+        var arr = [];
+        for (var k = 0; k < dd.length; k++) arr.push(dd[k]);
+        d.dash = arr;
+    } catch (e5) {}
+    try { d.dash_offset = p.strokeDashOffset; } catch (e6) {}
+    try { d.miter_limit = p.strokeMiterLimit; } catch (e7) {}
+    try { d.clipping = !!p.clipping; } catch (e8) {}
+    return d;
+};
+
+// Text frame descriptor with full character/paragraph attributes.
+CAI.describeTextDeep = function (doc, abIndex, tf) {
+    var d = CAI.describeItem(doc, abIndex, tf);
+    d.contents_full = "";
+    try { d.contents_full = String(tf.contents); } catch (e0) {}
+    var attrs = null;
+    try { attrs = tf.textRange.characterAttributes; } catch (e1) {}
+    d.size = null; d.font = null; d.tracking = null;
+    d.leading = null; d.auto_leading = null;
+    if (attrs) {
+        try { d.size = attrs.size; } catch (e2) {}
+        try {
+            d.font = { name: String(attrs.textFont.name),
+                       family: String(attrs.textFont.family),
+                       style: String(attrs.textFont.style) };
+        } catch (e3) {}
+        try { d.tracking = attrs.tracking; } catch (e4) {}
+        try { d.leading = attrs.leading; } catch (e5) {}
+        try { d.auto_leading = attrs.autoLeading; } catch (e6) {}
+        try { d.fill = CAI.describeColor(attrs.fillColor); } catch (e7) {}
+    }
+    d.justification = null;
+    try {
+        d.justification = CAI.justificationName(
+            tf.textRange.paragraphAttributes.justification);
+    } catch (e8) {}
+    d.kind = "point";
+    try { if (String(tf.kind) === String(TextType.AREATEXT)) d.kind = "area"; } catch (e9) {}
+    return d;
+};
+
 // Run fn with UI alerts suppressed (e.g. missing-font dialogs on open),
 // restoring the previous interaction level afterwards.
 CAI.silently = function (fn) {

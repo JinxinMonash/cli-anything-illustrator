@@ -183,3 +183,44 @@ def test_runner_applescript_compiles(tmp_path):
     proc = subprocess.run(["osacompile", "-o", str(tmp_path / "runner.scpt"),
                            str(scpt)], capture_output=True, text=True)
     assert proc.returncode == 0, proc.stderr
+
+
+SVG_REF = """<svg xmlns="http://www.w3.org/2000/svg" width="300pt" height="200pt">
+<rect x="10" y="10" width="280" height="180" fill="none" stroke="black"/>
+<path d="M30 180 C 100 60, 200 160, 280 40" stroke="blue" stroke-width="2" fill="none"/>
+<text x="20" y="30" font-family="Helvetica" font-size="12">Live reconstruct test</text>
+</svg>"""
+
+
+class TestReconstructLive:
+    """v0.10 fidelity workflow against real Illustrator."""
+
+    def test_reconstruct_preserve_and_compare(self, cli, tmp_path):
+        pytest.importorskip("pymupdf", reason="fidelity extra not installed")
+        ref = tmp_path / "ref.svg"
+        ref.write_text(SVG_REF)
+        out_ai = tmp_path / "recon.ai"
+        _, out = cli.run("figure", "reconstruct", "--reference", str(ref),
+                         "--mode", "preserve", "--output", str(out_ai),
+                         "--dpi", "150")
+        man = out["result"]
+        assert man["route"] == "native_open"
+        assert os.path.isfile(out_ai)
+        ed = man["editability"]
+        assert ed["editability_status"] in ("PASS", "WARN")
+        assert ed["live_text"] >= 1, "SVG text must stay live in Illustrator"
+        # REAL comparison: Illustrator-rendered PNG vs reference render
+        assert man["compare"] is not None, man["warnings"]
+        m = man["compare"]["metrics"]
+        assert m["ssim"] > 0.85, f"low fidelity: {m}"
+        cli.run("doc", "close", "--doc", "recon.ai", "--discard-changes")
+
+    def test_inspect_paths_roundtrip(self, cli, tmp_path):
+        cli.run("doc", "new", "--width", "100", "--height", "100")
+        cli.run("path", "add", "--anchors", "[[10,10],[90,10],[50,90]]",
+                "--closed", "--fill", "0,120,60", "--item-name", "livetri")
+        _, out = cli.run("inspect", "paths", "--name", "livetri")
+        p = out["result"]["paths"][0]
+        assert p["anchor_count"] == 3 and p["closed"] is True
+        assert p["fill"]["rgb"] == [0, 120, 60]
+        cli.run("doc", "close", "--discard-changes")

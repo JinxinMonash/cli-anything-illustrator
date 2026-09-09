@@ -42,6 +42,28 @@
             if (!doc.layers[L].visible) hiddenLayers.push(doc.layers[L].name);
         }
 
+        var ed = {
+            text_frames: doc.textFrames.length,
+            path_items: doc.pathItems.length,
+            raster_items: doc.rasterItems.length,
+            placed_items: doc.placedItems.length,
+            gradients_defined: 0,
+            clipping_groups: 0,
+            locked_items: 0,
+            hidden_items: 0
+        };
+        try { ed.gradients_defined = doc.gradients.length; } catch (eg) {}
+        var allPI = doc.pageItems;
+        for (var q = 0; q < allPI.length; q++) {
+            if (allPI[q].locked) ed.locked_items++;
+            if (allPI[q].hidden) ed.hidden_items++;
+            try {
+                if (String(allPI[q].typename) === "GroupItem" && allPI[q].clipped)
+                    ed.clipping_groups++;
+            } catch (eq) {}
+        }
+        rep.editability = ed;
+
         rep.fonts_used = fontList;
         rep.fonts_unavailable = unavailable;
         rep.placed_links = links;

@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.10.0 (2026-09-09)
+
+High-fidelity reference-figure reconstruction.
+
+- New `figure reconstruct`: rebuild a reference figure (PDF/AI/SVG/EPS or
+  raster) as an editable .ai master. Preservation-first routing: vector-native
+  references are opened by Illustrator, never redrawn; raster references are
+  placed as a locked template layer with optional deterministic Image Trace
+  (`--trace`). Modes: auto/preserve/fidelity/recreate/redesign. Writes a full
+  manifest (preflight, editability, fidelity metrics, unrecoverable list).
+- New `reference` group: `analyze` (preflight recovery plan), `render`
+  (deterministic rasteriser), `compare` (SSIM + Sobel edge F1 + CIE76 colour
+  delta; per-discrepancy merged difference regions typed geometry/color/text,
+  with heatmap and overlay outputs, optionally mapped to document objects).
+- New `inspect` group: document/objects/paths/text/gradients/colors/
+  editability (structural PASS/WARN/FAIL with outlined-text detection).
+- Expanded object model: `path add|edit|compound|clip` (anchors + Bezier
+  handles), `gradient add|apply|list`, `style set` (fill/stroke/none, caps,
+  joins, miter, dashes, opacity), `object transform` (scale/rotate/translate
+  about center or top-left), text typography updates (tracking, leading,
+  justification, area-frame sizing).
+- `doc report` now includes gradients, clipping masks, symbols, and
+  outlined-text suspects.
+- Comparison engine improvements found by benchmarking: colour-aware region
+  triggering (isoluminant recolours are SSIM-invisible) and same-type
+  connected-tile merging (one discrepancy = one region).
+- New optional extra: `pip install "cli-anything-illustrator[fidelity]"`.
+- Portable suite: 190 tests (object-model mock coverage, fidelity engine
+  units, reconstruct end-to-end); live suite extended with reconstruct and
+  path round-trip tests.
+
+
 ## 0.9.4 (2026-09-09)
 
 - Windows COM backend rewritten and improved: attaches to a running

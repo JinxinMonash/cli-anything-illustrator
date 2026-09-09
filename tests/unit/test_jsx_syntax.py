@@ -25,7 +25,12 @@ def test_all_expected_ops_present():
                 "layer_remove", "layer_set", "text_add", "text_update", "shape_add",
                 "items_list", "item_update", "item_delete", "group_make",
                 "align_items", "import_file", "export_png", "export_svg",
-                "export_pdf", "fonts_list"}
+                "export_pdf", "fonts_list",
+                # expanded object model (v0.10)
+                "path_add", "path_edit", "compound_make", "clip_make",
+                "gradient_add", "gradient_apply", "style_set", "transform_apply",
+                "inspect_document", "inspect_paths", "inspect_text",
+                "inspect_gradients", "inspect_colors"}
     assert expected <= set(OPS)
 
 

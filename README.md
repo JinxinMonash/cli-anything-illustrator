@@ -88,6 +88,37 @@ and warnings. Command reference:
 worked examples in `examples/workflow_1_schematic.sh`, `workflow_2_revision.sh`,
 `workflow_3_assembly.sh`.
 
+## Reference-figure reconstruction (v0.10)
+
+Reproduce an existing figure — a paper PDF panel, an old AI file, an SVG
+export, even a raster scan — as an **editable** Illustrator master, with
+measured fidelity instead of claimed fidelity:
+
+```bash
+cli-anything-illustrator reference analyze fig3.pdf          # what is recoverable?
+cli-anything-illustrator figure reconstruct --reference fig3.pdf \
+    --mode auto --output fig3_editable.ai --dpi 300
+```
+
+The manifest (`fig3_editable.ai.reconstruct.json`) records the preflight
+analysis, an editability score (live text / vector objects / outlined-text
+suspects), SSIM + edge + CIE76 colour metrics against the reference, ranked
+difference regions mapped to document objects, and an explicit
+`unrecoverable` list. Native vector content is opened and preserved, never
+redrawn; raster references are placed as a locked template layer (optional
+deterministic `--trace`). The iterative loop — export, `reference compare`
+(heatmap + overlay), fix the top region with `path edit`/`style set`/
+`text update`/`object transform`, repeat — turns "looks about right" into
+numbers.
+
+New in the v0.10 object model: `path add|edit|compound|clip` (full Bezier
+control), `gradient add|apply|list`, `style set` (caps, joins, dashes,
+opacity), `object transform` (rotate/scale/translate about a chosen origin),
+`inspect document|objects|paths|text|gradients|colors|editability`, and
+typography controls on `text update` (tracking, leading, justification).
+Reconstruction needs the fidelity extra:
+`pip install "cli-anything-illustrator[fidelity]"` (pymupdf, numpy, pillow).
+
 ## Conventions & safety model
 
 - **Coordinates:** origin at the target artboard's top-left, x right,

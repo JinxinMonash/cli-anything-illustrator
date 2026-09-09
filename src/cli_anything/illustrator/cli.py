@@ -404,6 +404,15 @@ def text_list(ctx, doc):
               help="Apply to ALL matches (default: exactly one match required).")
 @click.option("--set-contents", default=None, help="Replace text contents.")
 @click.option("--set-size", type=float, default=None)
+@click.option("--set-tracking", type=float, default=None,
+              help="Thousandths of an em.")
+@click.option("--set-leading", type=float, default=None, help="Points.")
+@click.option("--set-justify", type=click.Choice(["left", "center", "right"]),
+              default=None)
+@click.option("--set-width", type=float, default=None,
+              help="Area text frames only (pt).")
+@click.option("--set-height", type=float, default=None,
+              help="Area text frames only (pt).")
 @click.option("--set-font", default=None)
 @click.option("--allow-font-substitute", is_flag=True)
 @click.option("--set-color", default=None, help="'r,g,b' or '#rrggbb'.")
@@ -413,7 +422,8 @@ def text_list(ctx, doc):
 @units_option
 @click.pass_context
 def text_update(ctx, uuid, name, layer, item_type, contains, index, doc,
-                allow_multiple, set_contents, set_size, set_font,
+                allow_multiple, set_contents, set_size, set_tracking,
+                set_leading, set_justify, set_width, set_height, set_font,
                 allow_font_substitute, set_color, set_name, move_to, units):
     """Update matched text frames (selector must resolve uniquely, or --all)."""
     updates = {}
@@ -421,6 +431,16 @@ def text_update(ctx, uuid, name, layer, item_type, contains, index, doc,
         updates["contents"] = set_contents
     if set_size is not None:
         updates["size"] = set_size
+    if set_tracking is not None:
+        updates["tracking"] = set_tracking
+    if set_leading is not None:
+        updates["leading"] = set_leading
+    if set_justify is not None:
+        updates["justification"] = set_justify
+    if set_width is not None:
+        updates["width"] = set_width
+    if set_height is not None:
+        updates["height"] = set_height
     if set_font is not None:
         updates["font"] = set_font
         updates["allow_font_substitute"] = allow_font_substitute
@@ -917,6 +937,434 @@ def figure_init(ctx, path, overwrite):
     with open(out, "w", encoding="utf-8") as fh:
         json.dump(example, fh, indent=2)
     _emit(ctx, "figure init", {"written": out})
+
+
+
+# ---------------------------------------------------------------- helpers (v0.10)
+def _json_opt(value, what, expect=list):
+    """Parse a JSON-valued CLI option with a typed error."""
+    if value is None:
+        return None
+    try:
+        parsed = json.loads(value)
+    except json.JSONDecodeError as exc:
+        raise ValidationError(f"--{what} is not valid JSON: {exc}")
+    if expect and not isinstance(parsed, expect):
+        raise ValidationError(f"--{what} must be a JSON {expect.__name__}.")
+    return parsed
+
+
+def _color_or_none(value):
+    if value is None:
+        return None
+    if value.strip().lower() == "none":
+        return "none"
+    return rgb_triplet(value)
+
+
+def _fidelity_mod():
+    try:
+        from cli_anything.illustrator import fidelity
+        return fidelity
+    except ImportError as exc:
+        raise ValidationError(str(exc))
+
+
+# ---------------------------------------------------------------- path group
+@cli.group("path")
+def path_grp():
+    """Arbitrary Bezier paths (anchors + handles)."""
+
+
+@path_grp.command("add")
+@doc_option
+@click.option("--anchors", required=True,
+              help='JSON [[x,y],...] canvas coords (top-left origin, y down).')
+@click.option("--left-handles", default=None, help="JSON [[x,y]|null,...] absolute.")
+@click.option("--right-handles", default=None, help="JSON [[x,y]|null,...] absolute.")
+@click.option("--closed", is_flag=True)
+@click.option("--fill", default=None, help="'r,g,b' or '#rrggbb'")
+@click.option("--stroke", default=None)
+@click.option("--stroke-width", type=float, default=None)
+@click.option("--item-name", default=None)
+@click.option("--layer", default=None)
+@click.option("--layer-create", is_flag=True)
+@click.option("--artboard", type=int, default=0, show_default=True)
+@click.pass_context
+def path_add(ctx, doc, anchors, left_handles, right_handles, closed, fill,
+             stroke, stroke_width, item_name, layer, layer_create, artboard):
+    """Add a Bezier path with explicit anchors and handles."""
+    params = {**_doc_params(doc), "artboard": artboard,
+              "anchors": _json_opt(anchors, "anchors"),
+              "closed": closed}
+    if left_handles:
+        params["left_handles"] = _json_opt(left_handles, "left-handles")
+    if right_handles:
+        params["right_handles"] = _json_opt(right_handles, "right-handles")
+    if fill:
+        params["fill"] = rgb_triplet(fill)
+    if stroke:
+        params["stroke"] = rgb_triplet(stroke)
+    if stroke_width is not None:
+        params["stroke_width"] = stroke_width
+    if item_name:
+        params["name"] = item_name
+    if layer:
+        params["layer"] = layer
+        params["layer_create"] = layer_create
+    _run(ctx, "path add", "path_add", params)
+
+
+@path_grp.command("edit")
+@doc_option
+@selector_options
+@click.option("--points", required=True,
+              help='JSON [{"index":i,"anchor":[x,y]?,"left":[x,y]?,'
+                   '"right":[x,y]?,"point_type":"smooth"|"corner"?},...]')
+@click.option("--set-closed", type=bool, default=None)
+@click.option("--artboard", type=int, default=0)
+@click.pass_context
+def path_edit(ctx, doc, uuid, name, layer, item_type, contains, index, points,
+              set_closed, artboard):
+    """Edit anchors/handles of one existing path."""
+    params = {**_doc_params(doc), "artboard": artboard,
+              "selector": build_selector(uuid, name, layer, item_type, contains, index),
+              "points": _json_opt(points, "points")}
+    if set_closed is not None:
+        params["closed"] = set_closed
+    _run(ctx, "path edit", "path_edit", params)
+
+
+@path_grp.command("compound")
+@doc_option
+@selector_options
+@click.option("--item-name", default=None)
+@click.pass_context
+def path_compound(ctx, doc, uuid, name, layer, item_type, contains, index, item_name):
+    """Combine matched paths into a compound path."""
+    params = {**_doc_params(doc),
+              "selector": build_selector(uuid, name, layer, item_type, contains, index)}
+    if item_name:
+        params["name"] = item_name
+    _run(ctx, "path compound", "compound_make", params)
+
+
+@path_grp.command("clip")
+@doc_option
+@selector_options
+@click.option("--item-name", default=None)
+@click.pass_context
+def path_clip(ctx, doc, uuid, name, layer, item_type, contains, index, item_name):
+    """Make a clipping mask from matched items (topmost path clips)."""
+    params = {**_doc_params(doc),
+              "selector": build_selector(uuid, name, layer, item_type, contains, index)}
+    if item_name:
+        params["name"] = item_name
+    _run(ctx, "path clip", "clip_make", params)
+
+
+# ---------------------------------------------------------------- gradients
+@cli.group("gradient")
+def gradient_grp():
+    """Document gradients: define, apply, list."""
+
+
+@gradient_grp.command("add")
+@doc_option
+@click.option("--gradient-name", "gname", required=True)
+@click.option("--type", "gtype", type=click.Choice(["linear", "radial"]),
+              default="linear", show_default=True)
+@click.option("--stops", required=True,
+              help='JSON [{"offset":0-100,"color":[r,g,b],"opacity":0-100?,'
+                   '"midpoint":0-100?},...] (>=2 stops)')
+@click.option("--replace", is_flag=True, help="Redefine if the name exists.")
+@click.pass_context
+def gradient_add(ctx, doc, gname, gtype, stops, replace):
+    """Define a named gradient on the document."""
+    _run(ctx, "gradient add", "gradient_add", {
+        **_doc_params(doc), "name": gname, "type": gtype,
+        "stops": _json_opt(stops, "stops"), "replace": replace})
+
+
+@gradient_grp.command("apply")
+@doc_option
+@selector_options
+@click.option("--gradient-name", "gname", required=True)
+@click.option("--target", type=click.Choice(["fill", "stroke"]), default="fill",
+              show_default=True)
+@click.option("--angle", type=float, default=0.0, show_default=True,
+              help="Degrees, Illustrator CCW convention.")
+@click.option("--origin", default=None, help="JSON [x,y] canvas coords.")
+@click.option("--length", type=float, default=None)
+@click.option("--all", "allow_multiple", is_flag=True)
+@click.pass_context
+def gradient_apply(ctx, doc, uuid, name, layer, item_type, contains, index,
+                   gname, target, angle, origin, length, allow_multiple):
+    """Apply a named gradient to matched items."""
+    params = {**_doc_params(doc), "gradient": gname, "target": target,
+              "angle": angle, "allow_multiple": allow_multiple,
+              "selector": build_selector(uuid, name, layer, item_type, contains, index)}
+    if origin:
+        params["origin"] = _json_opt(origin, "origin")
+    if length is not None:
+        params["length"] = length
+    _run(ctx, "gradient apply", "gradient_apply", params)
+
+
+@gradient_grp.command("list")
+@doc_option
+@click.pass_context
+def gradient_list(ctx, doc):
+    """List document gradients with stops."""
+    _run(ctx, "gradient list", "inspect_gradients", _doc_params(doc))
+
+
+# ---------------------------------------------------------------- style/transform
+@cli.group("style")
+def style_grp():
+    """Fill/stroke styling (caps, joins, dashes, opacity)."""
+
+
+@style_grp.command("set")
+@doc_option
+@selector_options
+@click.option("--fill", default=None, help="'r,g,b', '#rrggbb' or 'none'")
+@click.option("--stroke", default=None, help="'r,g,b', '#rrggbb' or 'none'")
+@click.option("--stroke-width", type=float, default=None)
+@click.option("--opacity", type=float, default=None)
+@click.option("--cap", type=click.Choice(["butt", "round", "projecting"]), default=None)
+@click.option("--join", type=click.Choice(["miter", "round", "bevel"]), default=None)
+@click.option("--miter-limit", type=float, default=None)
+@click.option("--dash", default=None, help='JSON [on,off,...] pt; "[]" = solid')
+@click.option("--dash-offset", type=float, default=None)
+@click.option("--all", "allow_multiple", is_flag=True)
+@click.pass_context
+def style_set(ctx, doc, uuid, name, layer, item_type, contains, index, fill,
+              stroke, stroke_width, opacity, cap, join, miter_limit, dash,
+              dash_offset, allow_multiple):
+    """Set stroke/fill style properties on matched items."""
+    params = {**_doc_params(doc), "allow_multiple": allow_multiple,
+              "selector": build_selector(uuid, name, layer, item_type, contains, index)}
+    if fill is not None:
+        params["fill"] = _color_or_none(fill)
+    if stroke is not None:
+        params["stroke"] = _color_or_none(stroke)
+    for key, val in (("stroke_width", stroke_width), ("opacity", opacity),
+                     ("cap", cap), ("join", join), ("miter_limit", miter_limit),
+                     ("dash_offset", dash_offset)):
+        if val is not None:
+            params[key] = val
+    if dash is not None:
+        params["dash"] = _json_opt(dash, "dash")
+    _run(ctx, "style set", "style_set", params)
+
+
+@object_grp.command("transform")
+@doc_option
+@selector_options
+@click.option("--scale-x", type=float, default=None, help="Percent.")
+@click.option("--scale-y", type=float, default=None, help="Percent.")
+@click.option("--rotate", type=float, default=None, help="Degrees CCW.")
+@click.option("--dx", type=float, default=None)
+@click.option("--dy", type=float, default=None, help="Canvas y-down.")
+@click.option("--about", type=click.Choice(["center", "topleft"]), default="center",
+              show_default=True)
+@click.option("--preserve-strokes", is_flag=True)
+@click.option("--all", "allow_multiple", is_flag=True)
+@click.pass_context
+def object_transform(ctx, doc, uuid, name, layer, item_type, contains, index,
+                     scale_x, scale_y, rotate, dx, dy, about, preserve_strokes,
+                     allow_multiple):
+    """Scale, rotate and translate matched items (in that order)."""
+    params = {**_doc_params(doc), "about": about,
+              "preserve_strokes": preserve_strokes,
+              "allow_multiple": allow_multiple,
+              "selector": build_selector(uuid, name, layer, item_type, contains, index)}
+    for key, val in (("scale_x", scale_x), ("scale_y", scale_y),
+                     ("rotate", rotate), ("dx", dx), ("dy", dy)):
+        if val is not None:
+            params[key] = val
+    _run(ctx, "object transform", "transform_apply", params)
+
+
+# ---------------------------------------------------------------- inspect group
+@cli.group("inspect")
+def inspect_grp():
+    """Structured document/object inspection (JSON)."""
+
+
+@inspect_grp.command("document")
+@doc_option
+@click.pass_context
+def inspect_document(ctx, doc):
+    """Document summary + full layer tree with item counts."""
+    _run(ctx, "inspect document", "inspect_document", _doc_params(doc))
+
+
+@inspect_grp.command("objects")
+@doc_option
+@selector_options
+@click.option("--limit", type=int, default=200, show_default=True)
+@click.pass_context
+def inspect_objects(ctx, doc, uuid, name, layer, item_type, contains, index, limit):
+    """List matched items (all items when no selector)."""
+    _run(ctx, "inspect objects", "items_list", {
+        **_doc_params(doc), "limit": limit,
+        "selector": build_selector(uuid, name, layer, item_type, contains,
+                                   index, required=False)})
+
+
+@inspect_grp.command("paths")
+@doc_option
+@selector_options
+@click.option("--anchor-limit", type=int, default=1000, show_default=True)
+@click.option("--max-paths", type=int, default=100, show_default=True)
+@click.pass_context
+def inspect_paths(ctx, doc, uuid, name, layer, item_type, contains, index,
+                  anchor_limit, max_paths):
+    """Deep path geometry: anchors, handles, paint, stroke style."""
+    _run(ctx, "inspect paths", "inspect_paths", {
+        **_doc_params(doc), "limit": anchor_limit, "max_paths": max_paths,
+        "selector": build_selector(uuid, name, layer, item_type, contains,
+                                   index, required=False)})
+
+
+@inspect_grp.command("text")
+@doc_option
+@selector_options
+@click.option("--limit", type=int, default=200, show_default=True)
+@click.pass_context
+def inspect_text(ctx, doc, uuid, name, layer, item_type, contains, index, limit):
+    """Deep text attributes: font, size, tracking, leading, justification."""
+    _run(ctx, "inspect text", "inspect_text", {
+        **_doc_params(doc), "limit": limit,
+        "selector": build_selector(uuid, name, layer, item_type, contains,
+                                   index, required=False)})
+
+
+@inspect_grp.command("gradients")
+@doc_option
+@click.pass_context
+def inspect_gradients(ctx, doc):
+    """Gradient inventory with stops."""
+    _run(ctx, "inspect gradients", "inspect_gradients", _doc_params(doc))
+
+
+@inspect_grp.command("colors")
+@doc_option
+@click.pass_context
+def inspect_colors(ctx, doc):
+    """Unique paints used across paths and text."""
+    _run(ctx, "inspect colors", "inspect_colors", _doc_params(doc))
+
+
+@inspect_grp.command("editability")
+@doc_option
+@click.pass_context
+def inspect_editability(ctx, doc):
+    """Structural editability report (PASS/WARN/FAIL) for the document."""
+    fid = _fidelity_mod()
+    report = _backend(ctx).run_op("doc_report", _doc_params(doc),
+                                  timeout=ctx.obj["timeout"])
+    _emit(ctx, "inspect editability",
+          {"editability": fid.score_editability(report), "document_report": report})
+
+
+# ---------------------------------------------------------------- reference group
+@cli.group("reference")
+def reference_grp():
+    """Reference-figure analysis, rendering and comparison."""
+
+
+@reference_grp.command("analyze")
+@click.argument("src", type=click.Path(exists=True))
+@click.pass_context
+def reference_analyze(ctx, src):
+    """Preflight: what can be preserved/recovered from a reference figure."""
+    fid = _fidelity_mod()
+    _emit(ctx, "reference analyze", fid.analyze_reference(src))
+
+
+@reference_grp.command("render")
+@click.argument("src", type=click.Path(exists=True))
+@click.argument("out_png")
+@click.option("--dpi", type=float, default=300.0, show_default=True)
+@click.option("--page", type=int, default=0, show_default=True)
+@click.option("--overwrite", is_flag=True)
+@click.pass_context
+def reference_render(ctx, src, out_png, dpi, page, overwrite):
+    """Rasterise a reference (PDF/AI/SVG/raster) to PNG for comparison."""
+    fid = _fidelity_mod()
+    out = prepare_output_path(out_png, overwrite)
+    _emit(ctx, "reference render", fid.render_reference(src, dpi, out, page=page))
+
+
+@reference_grp.command("compare")
+@click.argument("reference", type=click.Path(exists=True))
+@click.argument("candidate", type=click.Path(exists=True))
+@click.option("--dpi", type=float, default=300.0, show_default=True,
+              help="Render dpi for vector references; also scales bbox_pt.")
+@click.option("--tile", type=int, default=64, show_default=True)
+@click.option("--objects-json", type=click.Path(exists=True), default=None,
+              help="items_list JSON to map difference regions to objects.")
+@click.option("--heatmap", default=None, help="Heatmap PNG path.")
+@click.option("--overlay", default=None, help="Overlay PNG path.")
+@click.pass_context
+def reference_compare(ctx, reference, candidate, dpi, tile, objects_json,
+                      heatmap, overlay):
+    """Compare a rendered candidate PNG against a reference figure.
+
+    REFERENCE may be PDF/AI/SVG (rendered at --dpi) or an image;
+    CANDIDATE must be a rendered PNG of the Illustrator artwork
+    (`export png --dpi` at the same dpi).
+    """
+    fid = _fidelity_mod()
+    ref_png = reference
+    if not reference.lower().endswith((".png", ".jpg", ".jpeg", ".tif", ".tiff")):
+        ref_png = os.path.splitext(candidate)[0] + ".reference.png"
+        fid.render_reference(reference, dpi, ref_png)
+    result = fid.compare_images(ref_png, candidate, tile=tile, dpi=dpi,
+                                heatmap_png=heatmap, overlay_png=overlay)
+    if objects_json:
+        with open(objects_json, "r", encoding="utf-8") as fh:
+            objs = json.load(fh)
+        result["region_objects"] = fid.map_regions_to_objects(
+            result["largest_differences"], objs, dpi=dpi)
+    _emit(ctx, "reference compare", result)
+
+
+
+@figure_grp.command("reconstruct")
+@click.option("--reference", "reference_path", required=True,
+              type=click.Path(exists=True),
+              help="Reference figure: PDF/AI/SVG/EPS or PNG/JPEG/TIFF.")
+@click.option("--mode", type=click.Choice(["auto", "preserve", "fidelity",
+                                           "recreate", "redesign"]),
+              default="auto", show_default=True,
+              help="auto follows the preflight recommendation.")
+@click.option("--output", "output_ai", required=True, help="Output .ai master.")
+@click.option("--dpi", type=float, default=300.0, show_default=True)
+@click.option("--no-compare", is_flag=True,
+              help="Skip the render+compare postflight.")
+@click.option("--trace", is_flag=True,
+              help="Raster references: deterministic Image Trace (live only).")
+@click.option("--overwrite", is_flag=True)
+@click.pass_context
+def figure_reconstruct(ctx, reference_path, mode, output_ai, dpi, no_compare,
+                       trace, overwrite):
+    """Reconstruct a reference figure as an editable .ai master.
+
+    Preserves native vectors/text when the reference contains them (the
+    document is opened by Illustrator, not redrawn); raster references are
+    placed as a locked template layer (optionally vector-traced). Writes a
+    manifest with preflight, editability and visual-fidelity results.
+    """
+    from cli_anything.illustrator.ops import reconstruct as recon_ops
+    manifest = recon_ops.reconstruct(
+        _backend(ctx), reference_path, mode, output_ai, dpi=dpi,
+        overwrite=overwrite, compare_enabled=not no_compare, trace=trace,
+        timeout=ctx.obj["timeout"])
+    _emit(ctx, "figure reconstruct", manifest)
 
 
 # upstream-compatible alias: `project` == `doc`
