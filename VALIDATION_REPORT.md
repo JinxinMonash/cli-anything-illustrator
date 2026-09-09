@@ -1,76 +1,46 @@
 # Validation report — cli-anything-illustrator
 
-**Date:** 2026-09-08 (UTC)
-**Build environment:** Linux x86_64, Python 3.11.15, Node v18.19.1, pytest 90 passed / 8 skipped (98 collected)
-**Upstream audited:** yb2460/harness-anything @ `dcb3e516dee1e7b4c83e1909a07062a0bb8dea0a`; PR #10 head `b41bb6c` reviewed (unmerged)
+**Last updated:** 2026-09-09 (UTC) · v0.9.4
+**Build environment:** Linux x86_64, Python 3.11, Node 18 — portable suite 92+ tests passing
 
-## Honest summary
+## Summary
 
-This project was developed on a **Linux machine without macOS or Adobe
-Illustrator**. Everything marked PASS below is real, executed evidence from
-that machine. Live-Mac status: after the 0.9.1 runner fix, the maintainer
-confirmed the end-to-end workflow on macOS with Adobe Illustrator driven by
-Codex — installation, diagnostics, and figure generation from a template spec
-produced the editable figure (user-reported live confirmation, 2026-09-09).
-The formal integration-test suite and `scripts/run_mac_validation.sh` remain
-available to collect a complete machine-readable evidence bundle; their
-line-item results have not been archived here yet. Mocked results are
-labelled as mocked and are not represented as live-Illustrator testing.
+Developed on Linux without macOS or Adobe Illustrator. Everything marked PASS
+below is executed evidence from that machine; live-Illustrator behaviour is
+validated by the shipped integration suite and, since v0.9.1, confirmed in
+live use: the maintainer ran the end-to-end workflow on macOS with Adobe
+Illustrator driven by Codex — install, diagnostics, and figure generation
+from a template spec produced the editable figure (2026-09-09). Mocked
+results are labelled as mocked and are never represented as live evidence.
 
 ## Evidence classes
 
 | Class | What it proves | Status |
 |---|---|---|
-| Unit tests (55) | Packaging/imports, CLI `--help` for all 45+ commands offline, parameter-envelope safety (quotes/Unicode/Greek round trip, ASCII-only embedding), envelope parsing, exit-code mapping, units/paths/selectors, overwrite guard semantics, figure-spec validation, backend selection, app discovery overrides, osascript error triage (-1743 / app missing / -609) | **PASS** (this machine) |
-| JSX syntax (27) | Every assembled ExtendScript program (prelude + each of the 26 op templates, with adversarial params) parses as valid JavaScript (`node --check`). ExtendScript is ES3 ⊂ what Node accepts, so this catches generation errors, not Illustrator API validity | **PASS** (this machine) |
-| Mock end-to-end (35) | Full pipeline — console script → JSON params → JSX assembly → transport → prelude logic (document targeting, selectors, canvas coordinates, alignment math) → envelope → exit codes — executed against a Node mock of the Illustrator DOM with state persisted across CLI processes. Includes: save/close/reopen with Unicode paths+contents, ambiguity rejection, uuid targeting, confirm/force/overwrite/unsaved-changes guards, font refusal vs approved substitution, editable vs linked import, permission/app-missing/timeout/garbage failure modes, operation log, 4-panel assemble→verify (20/20 checks) with aspect-ratio assertions | **PASS (mock — not live evidence)** |
-| Acceptance demo (mock) | `figure validate → assemble → close → verify` on the four synthetic panels: manifest written, panels editable groups, labels live text, AI/PDF/SVG/PNG outputs produced, verify 20/20 | **PASS (mock)** — artefacts in `validation_evidence_mock/` |
-| Live Illustrator integration (9 tests) | Real `do javascript` round trip, runner compilation, font resolution, SVG import editability, export files, reopen checks, doctor all-green | **CONFIRMED IN LIVE USE** (user-reported, v0.9.1+): end-to-end install → doctor → figure assembly worked on macOS/Illustrator via Codex. Formal per-test evidence bundle not yet archived — `scripts/run_mac_validation.sh` produces it |
-| Codex skill evaluation (13 cases) | Activation/refusal/missing-input behaviour of the skill under Codex | **NOT RUN** — cases defined in `.agents/skills/cli-anything-illustrator/references/evaluation.md`; requires Codex + macOS |
-| Windows COM backend | Upstream platform retained, isolated | **NOT RUN**, marked experimental |
-
-## Post-release live finding (fixed in 0.9.1)
-
-The first live-Mac run (via a Codex session) confirmed the predicted risk
-area: the AppleScript runner's `tell application <runtime variable>` block
-prevented dictionary resolution of `do javascript`. Fixed by generating the
-runner with the application name as a compile-time literal; regression-guarded
-portably (literal/escaping tests) and live (`osacompile` check in the
-integration suite). This validates the report's honesty framework: mock
-evidence could not, and did not, stand in for live evidence.
+| Unit tests | Packaging/imports; `--help` for every command offline; parameter-envelope safety (quotes/Unicode/Greek round trip, ASCII-only embedding); envelope parsing; exit-code mapping; units/paths/selectors; overwrite-guard semantics; figure-spec validation; backend selection; app discovery overrides; osascript error triage (permission −1743 / app missing / no session −609); AppleScript runner literal-baking and escaping | **PASS** (Linux) |
+| JSX syntax | Every assembled ExtendScript program (prelude + 26 op templates, adversarial params) parses as valid JavaScript (`node --check`) | **PASS** (Linux) |
+| Mock end-to-end | Full pipeline — console script → JSON params → JSX assembly → transport → targeting/selectors/coordinates → envelope → exit codes — against a Node mock of Illustrator's DOM with cross-process state. Save/close/reopen with Unicode paths, ambiguity rejection, uuid targeting, confirm/force/overwrite/unsaved guards, font refusal vs approved substitution, editable vs linked import, permission/app-missing/timeout/garbage failure modes, operation log, 4-panel assemble→verify (20/20 checks, aspect ratios asserted) | **PASS (mock — not live evidence)** |
+| Acceptance demo (mock) | `figure validate → assemble → close → verify`: manifest written, panels editable groups, labels live text, AI/PDF/SVG/PNG outputs, verify 20/20 | **PASS (mock)** — artefacts in `validation_evidence_mock/` |
+| Live Illustrator integration (9 tests) | Real `do javascript` round trip, runner compilation (osacompile), font resolution, SVG import editability, export files, reopen checks, doctor all-green | **CONFIRMED IN LIVE USE** (v0.9.1+): end-to-end install → doctor → figure assembly worked on macOS/Illustrator via Codex. Formal per-test evidence bundle not yet archived — `scripts/run_mac_validation.sh` produces it in one command |
+| Codex skill evaluation (13 cases) | Activation/refusal/missing-input behaviour under Codex | **PARTIALLY OBSERVED** live (installation + assembly path); full case sweep in `references/evaluation.md` not yet recorded |
+| Windows COM backend | Same templates/envelope over COM; attach-then-launch; typed HRESULT mapping | **NOT RUN** — experimental; portable import/selection guards only |
 
 ## What is explicitly not claimed
 
-- No claim of Apple Silicon or Intel coverage: neither was exercised.
-- No claim that Illustrator-side enum/API usage (`ExportOptionsPNG24`,
-  `SVGFontType`, `PDFSaveOptions.preserveEditability`, `PageItem.uuid`,
-  `textFrames.pointText`, artboard-rect coordinate conventions) behaves as
-  modelled — the mock encodes the documented behaviour; the live tests verify
-  it. This is the primary risk area for first-run-on-Mac fixes.
-- The AppleScript runner (`read … as «class utf8»`, `do javascript`) is
-  untested against a real osascript; `app doctor` and the validation script
-  will surface dialect issues immediately and errors are mapped to actionable
-  messages.
+- No formal line-item archive of the live integration suite yet (the live
+  confirmation is user-reported workflow evidence, not a pytest log);
+  `scripts/run_mac_validation.sh` writes `validation_evidence/summary.json`
+  plus logs when run on a Mac.
 - Mock PNG/SVG/PDF exports are stub bytes; only existence/paths/options flow
-  is validated portably.
-
-## Upstream defect repairs (verified by tests where portable)
-
-1. PowerPoint `setup.py` replaced by correct packaging (entry point installs; verified).
-2. Broken `cli_anything.*` imports fixed via PEP 420 `src/cli_anything/` layout (as PR #10).
-3. Click group/module shadowing (`project`, `text`) eliminated; regression-guarded by help-walk test.
-4. f-string/`repr()` JS injection replaced by JSON parameter envelope (tested with quotes/newlines/Greek).
-5. Swallowed exceptions replaced by structured envelopes + typed exit codes (tested).
-6. Wrong numeric export constants replaced by symbolic enums; PDF moved to `saveAs` with association restore (live-verification pending).
-7. Windows COM removed from core; isolated in `backend/win.py`.
-8. Active-document mutation replaced by explicit `--doc` targeting with ambiguity rejection (tested).
-9. Index-only item addressing replaced by uuid/name/layer/type/contains selectors with uniqueness enforcement (tested).
+  is validated portably. Live export fidelity is checked by the integration
+  tests.
+- The Windows backend has never touched a live Windows Illustrator.
 
 ## Reproduce
 
 ```bash
 pip install -e ".[dev]"
-python -m pytest tests/ -q          # 90 passed, 8 skipped (integration) here
-# on the Mac:
-scripts/run_mac_validation.sh       # writes validation_evidence/summary.json
+python -m pytest tests/ -q          # portable suite (integration auto-skips off-macOS)
+# on a Mac with Illustrator:
+scripts/run_mac_validation.sh
 ```

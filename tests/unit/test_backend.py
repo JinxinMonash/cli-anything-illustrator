@@ -18,7 +18,7 @@ def test_select_backend_rejects_linux():
 
 def test_select_backend_platforms():
     assert select_backend(platform="darwin").name == "mac-osascript"
-    assert select_backend(platform="win32").name == "win-com-experimental"
+    assert select_backend(platform="win32").name == "windows-com-experimental"
 
 
 def test_discover_override_name(monkeypatch):
@@ -83,3 +83,26 @@ def test_runner_escapes_hostile_app_names():
     # every '"' except the two delimiters must be preceded by a backslash
     line = next(l for l in src.splitlines() if "tell application" in l)
     assert line.count('"') - line.count('\\"') == 2
+
+
+# --- Windows backend (portable guards; live COM not testable here) --------
+
+def test_win_backend_selected_on_windows_platform():
+    from cli_anything.illustrator.backend import select_backend
+    from cli_anything.illustrator.backend.win import WinBackend, DEFAULT_PROGID
+    b = select_backend(platform="win32")
+    assert isinstance(b, WinBackend)
+    assert b.progid == DEFAULT_PROGID
+
+
+def test_win_backend_progid_override():
+    from cli_anything.illustrator.backend.win import WinBackend
+    assert WinBackend("Illustrator.Application.29").progid == "Illustrator.Application.29"
+
+
+def test_win_backend_missing_pywin32_actionable_error():
+    import pytest
+    from cli_anything.illustrator.backend.win import WinBackend
+    from cli_anything.illustrator.errors import AppMissingError
+    with pytest.raises(AppMissingError, match=r"cli-anything-illustrator\[windows\]"):
+        WinBackend().run_op("ping", {})  # pywin32 absent on this platform

@@ -128,10 +128,12 @@ See [VALIDATION_REPORT.md](VALIDATION_REPORT.md) for the evidence trail.
   rebuild, so repeated runs are predictable.
 - Item `uuid` targeting uses Illustrator's persistent `PageItem.uuid`
   (2020+); `--name` targeting is the fallback on older versions.
-- A Windows COM backend is included but experimental; macOS is the supported
-  platform.
+- A Windows COM backend is included (`pip install
+  "cli-anything-illustrator[windows]"`): same commands, JSON envelope and exit
+  codes over COM; it attaches to a running Illustrator before launching a new
+  one. Experimental — not yet validated on a live Windows machine; macOS is
+  the supported platform.
 
 ## License
 
-MIT — see [LICENSE](LICENSE). Third-party code provenance is documented in
-[PROVENANCE.md](PROVENANCE.md).
+MIT — see [LICENSE](LICENSE) and [THIRD_PARTY_NOTICES](THIRD_PARTY_NOTICES).

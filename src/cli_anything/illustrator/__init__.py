@@ -3,4 +3,4 @@
 macOS-native backend: AppleScript ``do javascript`` -> parameterised
 ExtendScript, with structured JSON results and non-destructive defaults.
 """
-__version__ = "0.9.3"
+__version__ = "0.9.4"

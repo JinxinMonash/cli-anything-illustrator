@@ -1,6 +1,12 @@
-MIT License
+Third-party notices
+===================
 
-Copyright (c) 2026 Jinxin Zhao (JinxinMonash)
+Early development of this project referenced and derived from portions of
+"harness-anything" (https://github.com/yb2460/harness-anything),
+Copyright (c) 2026 cli-anything-wps contributors, distributed under the MIT
+License reproduced below. The notice is retained as required by that license.
+
+MIT License
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
