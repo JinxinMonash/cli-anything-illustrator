@@ -42,9 +42,22 @@ def _np():
 
 
 def _load_rgb(path):
+    """Load as RGB float64, compositing any alpha onto WHITE.
+
+    Illustrator exports PNG24 with a transparent background by default;
+    a naive RGBA->RGB conversion drops alpha to black and makes the whole
+    canvas compare as a mismatch against white-background reference renders
+    (found in the first live reconstruct run: pixel_mae ~247).
+    """
     np = _np()
     Image = require("PIL.Image")
     with Image.open(path) as im:
+        if im.mode in ("RGBA", "LA") or \
+                (im.mode == "P" and "transparency" in im.info):
+            rgba = im.convert("RGBA")
+            bg = Image.new("RGBA", rgba.size, (255, 255, 255, 255))
+            bg.alpha_composite(rgba)
+            return np.asarray(bg.convert("RGB"), dtype=np.float64)
         return np.asarray(im.convert("RGB"), dtype=np.float64)
 
 

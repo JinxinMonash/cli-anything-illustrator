@@ -127,3 +127,12 @@ def test_saveas_templates_suppress_dialogs():
     assert "CAI.silently(function () { doc.saveAs" in load_jsx("doc_saveas.jsx")
     pdf = load_jsx("export_pdf.jsx")
     assert pdf.count("CAI.silently") >= 2
+
+
+# --- regression: live-Mac defects found on Illustrator 27.5 (0.10.2) -----
+
+def test_export_svg_template_restores_association():
+    from cli_anything.illustrator.backend.base import load_jsx
+    src = load_jsx("export_svg.jsx")
+    assert "origPath" in src and "reassociated" in src
+    assert "CAI.silently(function () { doc.saveAs" in src

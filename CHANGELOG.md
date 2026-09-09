@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.10.2 (2026-09-09)
+
+Fixes from the second live-Mac run (Illustrator 27.5): 8/11 -> target 11/11.
+
+- SVG export re-associates the open document with the exported file on live
+  Illustrator, renaming it and breaking every later command that targets the
+  original document (this also broke `figure assemble`, whose export order is
+  PNG -> SVG -> PDF). `export svg` now restores the original association and
+  reports `reassociated_to`. The mock DOM emulates the quirk so the portable
+  suite guards it.
+- Visual comparison treated Illustrator's transparent-background PNG exports
+  as black (pixel_mae ~247 against white-background reference renders). The
+  comparison loader now composites alpha onto white.
+
+
 ## 0.10.1 (2026-09-09)
 
 Fixes from the first live-Mac run of v0.10.0 (Illustrator 27.5, macOS 15.6):

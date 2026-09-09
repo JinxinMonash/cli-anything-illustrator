@@ -3,6 +3,16 @@
 **Last updated:** 2026-09-09 (UTC) · v0.9.4
 **Build environment:** Linux x86_64, Python 3.11, Node 18 — portable suite 92+ tests passing
 
+## Second live-Mac run (v0.10.1, Illustrator 27.5)
+
+Result: 8 passed / 3 failed. Both v0.10.1 fix classes CONFIRMED FIXED live
+(editable SVG import, figure assembly import stage, path add/inspect
+round-trip, no AppleEvent timeout cascades). Two new defect classes found and
+fixed in v0.10.2: SVG-export document re-association (broke the export test
+and the assembly export chain) and transparent-PNG-vs-white comparison in the
+reconstruct postflight (SSIM ~0 despite a correct reconstruction). Live re-run
+of v0.10.2 pending.
+
 ## First live-Mac run of v0.10.0 (user-reported, Illustrator 27.5 / macOS 15.6)
 
 Result: doctor 5/5 OK; 6 live tests passed (unicode text round-trip, targeting,

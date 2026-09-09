@@ -566,6 +566,12 @@ class Document {
             fs.writeFileSync(file.fsName,
                 '<svg xmlns="http://www.w3.org/2000/svg"><!-- MOCK export fontType=' +
                 (opts ? String(opts.fontType) : "?") + ' --></svg>');
+            // Live-Illustrator fidelity (observed on 27.5): SVG export
+            // RE-ASSOCIATES the document with the exported file. Templates
+            // must restore the original association afterwards.
+            this.name = path.basename(file.fsName);
+            this.fullNameFile = file;
+            this.saved = true;
         }
     }
     close(saveOpt) {

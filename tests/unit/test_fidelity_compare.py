@@ -222,3 +222,22 @@ def test_map_regions_accepts_px_only_and_dict_items():
 def test_map_regions_requires_bbox():
     with pytest.raises(ValueError):
         map_regions_to_objects([{"severity": "high"}], [])
+
+
+def test_alpha_composites_onto_white(tmp_path):
+    """Transparent-background candidates must not compare as black
+    (live reconstruct defect: Illustrator PNG24 exports are transparent)."""
+    Image = pytest.importorskip("PIL.Image")
+    from cli_anything.illustrator.fidelity import compare_images
+    w, h = 128, 128
+    opaque = Image.new("RGB", (w, h), (255, 255, 255))
+    d = Image.new("RGB", (20, 20), (200, 30, 30))
+    opaque.paste(d, (54, 54))
+    ref = tmp_path / "ref.png"; opaque.save(ref)
+    # same content, but transparent background instead of white
+    trans = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    trans.paste(Image.new("RGBA", (20, 20), (200, 30, 30, 255)), (54, 54))
+    cand = tmp_path / "cand.png"; trans.save(cand)
+    res = compare_images(str(ref), str(cand))
+    assert res["metrics"]["ssim"] > 0.99, res["metrics"]
+    assert res["largest_differences"] == []
